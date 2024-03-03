@@ -18,8 +18,8 @@ public abstract class GeneralReference {
         }
         else
         {
-            OverflowReference ov = (OverflowReference) this;
-            results.addAll(ov.ALLgetRef());
+            OverflowReference or = (OverflowReference) this;
+            results.addAll(or.ALLgetRef());
         }
 
         return results;
