@@ -7,7 +7,7 @@ public interface TreeIndex<T extends Comparable> {
     public GeneralReference search(T key) throws DBAppException;
     public Ref searchForInsertion(T key, int tableLength) throws DBAppException ;
     public boolean delete(T key) throws DBAppException;
-    public boolean delete(T key, String Page_name) throws DBAppException;
+    public boolean delete(T key, String PageName) throws DBAppException;
     public void insert(T key, Ref recordReference) throws DBAppException;
     public LeafNode getLeftmostLeaf() throws DBAppException ;
     public ArrayList<GeneralReference> searchMTE(T key) throws DBAppException;
