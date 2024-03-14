@@ -7,9 +7,9 @@ public abstract class GeneralReference {
 
     public abstract boolean isOverflow();
     public abstract boolean isRecord();
-    public abstract void updateRef(String oldPage, String newPage) throws DBAppException;
+    public abstract void updateReference(String oldPage, String newPage) throws DBAppException;
 
-    public ArrayList<Ref> getALLRef() throws DBAppException
+    public ArrayList<Ref> getALLReference() throws DBAppException
     {
         ArrayList<Ref> results = new ArrayList<Ref>();
         if(this instanceof Ref)
@@ -18,8 +18,8 @@ public abstract class GeneralReference {
         }
         else
         {
-            OverflowReference or = (OverflowReference) this;
-            results.addAll(or.ALLgetRef());
+            OverflowReference overflowReference = (OverflowReference) this;
+            results.addAll(overflowReference.ALLgetRef());
         }
 
         return results;
