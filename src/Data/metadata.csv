@@ -1,0 +1,4 @@
+TableName,ColumnName,ColumnType,ClusteringKey,Indexed
+Table1,Name,java.lang.String,FALSE,FALSE
+Table2,ID,java.lang.Integer,FALSE,FALSE
+Table3,Date,java.util.Date,TRUE,FALSE
