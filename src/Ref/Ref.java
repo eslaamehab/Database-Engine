@@ -4,38 +4,15 @@ import java.io.Serializable;
 
 public class Ref extends GeneralRef implements Serializable
 {
-    public boolean equals(Object o) {
-        Ref x=(Ref) o;
-        Ref y=(Ref) this;
-        return (x.pageNo).equals(y.pageNo);
-    }
-    public int hashCode() {
-        char[] ch = pageNo.toCharArray();
-        //TODO: Assumption
-        String cum = "";
-        for (int k=ch.length-1;k>=0;k--) {
-            char c = ch[k];
-            int v = c-'0';
-            if (v<0 || v>9) break;
-            cum = v+cum;
-        }
-        return Integer.parseInt(cum);
-    }
-    /**
-     * This class represents a pointer to the record. It is used at the leaves of the B+ tree
-     */
-    private static final long serialVersionUID = 1L;
-    private String pageNo;//, indexInPage;
+
+    private String pageNo;
 
     public Ref(String pageNo)
     {
         this.pageNo = pageNo;
-//		this.indexInPage = indexInPage;
     }
 
-    /**
-     * @return the page at which the record is saved on the hard disk
-     */
+
     public String getPage()
     {
         return pageNo;
@@ -45,31 +22,39 @@ public class Ref extends GeneralRef implements Serializable
         this.pageNo=pageNo;
     }
 
-    /**
-     * @return the index at which the record is saved in the page
-     */
-//	public int getIndexInPage()
-//	{
-//		return indexInPage;
-//	}
-//
+
+    public boolean equals(Object obj) {
+        Ref x= (Ref) obj;
+        String firstNo = x.pageNo;
+        Ref y= this;
+        String secondNo = y.pageNo;
+        return firstNo.equals(secondNo);
+    }
+
+    public int hashCode() {
+        char[] charArray = pageNo.toCharArray();
+        String res = "";
+        for (int i=charArray.length-1; i>=0; i--) {
+            char c = charArray[i];
+            int cInt = c-'0';
+            if ( cInt<0 || cInt>9 ) break;
+            res = cInt + res;
+        }
+        return Integer.parseInt(res);
+    }
+
+    public void updateRef(String oldPage, String newPage) {
+        pageNo = newPage;
+    }
+
+    @Override
     public boolean isOverflow() {
         return false;
     }
+
+    @Override
     public boolean isRecord() {
-        return true;
-    }
-    public String toString() {
-        return pageNo+"";
-    }
-
-    //	public void updateRef(String oldpage, String newpage, int tableNameLength) {
-//		updateRef(oldpage, newpage);
-//	}
-//
-    public void updateRef(String oldPage, String newPage) {
-        pageNo=newPage;
-
+        return false;
     }
 }
 
