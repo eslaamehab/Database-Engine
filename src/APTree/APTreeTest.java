@@ -7,14 +7,13 @@ import static java.util.Objects.hash;
 
 public class APTreeTest implements Serializable {
 
-//    private static final long serialVersionUID = 1L;
     private Vector<Object> inserts;
     private static long nextId = 0l;
     private long id;
     private final String tableName;
 
     public void saveNextId() throws IOException {
-        File file = new File("Add path here/" + tableName+" Next ID");
+        File file = new File("Data: " + tableName+" Next ID");
         if (!file.exists())
             file.delete();
         file.createNewFile();
@@ -27,7 +26,7 @@ public class APTreeTest implements Serializable {
         long x = 0;
         try {
 
-            File f = new File("Add path here/" + tableName+" Next ID");
+            File f = new File("Data: " + tableName+" Next ID");
             if (!f.exists())
                 return 0;
             FileInputStream file = new FileInputStream("Add path here/" + tableName+" Next ID");
