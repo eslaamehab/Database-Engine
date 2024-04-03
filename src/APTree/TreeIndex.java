@@ -2,8 +2,8 @@ package src.APTree;
 
 import src.DBGeneralEngine.DBAppException;
 import src.Ref.GeneralRef;
+import src.Ref.Ref;
 
-import java.sql.Ref;
 import java.util.ArrayList;
 
 public interface TreeIndex<T extends Comparable> {
