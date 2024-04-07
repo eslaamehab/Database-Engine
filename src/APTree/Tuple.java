@@ -5,12 +5,19 @@ import java.util.Vector;
 
 public class Tuple implements Serializable {
 
-//    private static final long serialVersionUID = -1512597374643196276L;
-//    to be removed
     private Vector attributes = new Vector();
     private Object compare1, compare2;
 
-    // compare was previously equals
+
+    public Vector getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Vector attributes) {
+        this.attributes = attributes;
+    }
+
+
     public boolean equals(Object obj) {
         Tuple x=(Tuple)obj;
         Tuple y= this;
@@ -36,14 +43,6 @@ public class Tuple implements Serializable {
             str += (x != null) ? (x + "\t") : ("null\n");
         }
         return str;
-    }
-
-    public Vector getAttributes() {
-        return attributes;
-    }
-
-    public void setAttributes(Vector attributes) {
-        this.attributes = attributes;
     }
 
 
