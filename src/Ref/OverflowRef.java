@@ -4,123 +4,91 @@ import src.DBGeneralEngine.DBAppException;
 import src.APTree.OverflowPage;
 
 import java.io.*;
-//import java.sql.Ref;
 import java.util.ArrayList;
 
 public class OverflowRef extends GeneralRef implements Serializable
 {
-    public void setFirstPageName(String firstPageName) {
-        this.firstPageName = firstPageName;
-    }
 
     private String firstPageName;
-    //done (ta2riban) insert , delete and update pass the key and page
 
-    public String getFirstPageName() {
-        return firstPageName;
-    }
-    public OverflowPage getFirstPage() throws DBAppException {
-        OverflowPage firstPage=deserializeOverflowPage(firstPageName);
-        return firstPage;
-    }
-
-    public OverflowPage deserializeOverflowPage(String firstPageName2) throws DBAppException {
+    public OverflowPage deserializeOverflowPage(String firstPageName) throws DBAppException {
 
         try {
-//			System.out.println("IO||||	 deserialize:overflow Page:"+firstPageName2);
-            FileInputStream fileIn = new FileInputStream("data/"+ firstPageName2 + ".class");
-            ObjectInputStream in = new ObjectInputStream(fileIn);
-            OverflowPage OFP =   (OverflowPage) in.readObject();
-            in.close();
-            fileIn.close();
-            return OFP;
+            FileInputStream fileInputStream = new FileInputStream("data: "+ firstPageName + ".class");
+            ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
+            OverflowPage overflowPage = (OverflowPage) objectInputStream.readObject();
+            objectInputStream.close();
+            fileInputStream.close();
+            return overflowPage;
         }
         catch(IOException e) {
-            throw new DBAppException("IO Exception while loading an overflow page from the disk"+"\tdata/"+firstPageName2+".class");
+            throw new DBAppException("IO Exception in page: "+firstPageName+".class");
         }
         catch(ClassNotFoundException e) {
             throw new DBAppException("Class Not Found Exception");
         }
     }
 
+
+    public String getFirstPageName() {
+        return firstPageName;
+    }
+
+    public void setFirstPageName(String firstPageName) {
+        this.firstPageName = firstPageName;
+    }
+
+    public OverflowPage getFirstPage() throws DBAppException {
+        OverflowPage firstPage = deserializeOverflowPage(firstPageName);
+        return firstPage;
+    }
+
     public void setFirstPage(OverflowPage firstPage) throws DBAppException {
-        firstPageName= firstPage.getPageName();
+        this.firstPageName= firstPage.getPageName();
         firstPage.serialize();
     }
 
 
-    public void insert(Ref recordRef) throws DBAppException{
-        OverflowPage firstPage=deserializeOverflowPage(firstPageName);
-        firstPage.addRecord(recordRef);
-        firstPage.serialize();
+    public void insert(Ref ref) throws DBAppException{
+        OverflowPage overflowPage = deserializeOverflowPage(firstPageName);
+        overflowPage.addRecord(ref);
+        overflowPage.serialize();
     }
-    public void deleteRef(String page_name) throws DBAppException{
-        deleteRefORIGINAL(page_name);
-//		deleteRefNEW(page_name);
-    }
+    public void deleteRef(String pageName) throws DBAppException{
 
-    public void deleteRefORIGINAL(String page_name) throws DBAppException
-    {
-        OverflowPage firstPage =deserializeOverflowPage(firstPageName);
-        firstPage.deleteRecord(page_name);
-        if(firstPage.getRefs().isEmpty())
+        OverflowPage overflowPage = deserializeOverflowPage(firstPageName);
+        overflowPage.deleteRecord(pageName);
+        if(overflowPage.getRefs().isEmpty())
         {
-            // TODO delete overflow page with name (firstPageName)
-            File f = new File("data/"+firstPageName+".class");
-//			System.out.println("/////||||\\\\\\\\\\\\\\\\\\deleting file "+firstPageName);
-            f.delete();
-            firstPageName = firstPage.getNext();
-            firstPage=deserializeOverflowPage(firstPageName); //TODO:why? shouldn't return here; this next page hasn't been edited or anything
+            File file = new File("data: "+ firstPageName + ".class");
+            file.delete();
+            firstPageName = overflowPage.getNext();
+            overflowPage = deserializeOverflowPage(firstPageName);
         }
-        //shouldn't this be in an else part ?
-        firstPage.serialize();
-    }
-
-    public void deleteRefNEW(String page_name) throws DBAppException
-    {
-        OverflowPage first_ovp=deserializeOverflowPage(firstPageName);
-        first_ovp.deleteRecord(page_name);
-        if(first_ovp.getRefs().isEmpty())
-        {
-            // TODO delete overflow page with name (firstPageName)
-//			File f = new File("data/"+firstPageName+".class");
-//			System.out.println("/////||||\\\\\\\\\\\\\\\\\\deleting file "+firstPageName);
-//			f.delete();
-//			firstPageName = first_ovp.getNext();
-//			first_ovp=deserializeOverflowPage(firstPageName); //TODO:why? shouldn't return here; this next page hasn't been edited or anything
-            String second_ovp_name = first_ovp.getNext();
-            OverflowPage second_ovp = deserializeOverflowPage(second_ovp_name);
-            {//delete file
-                File f = new File("data/"+second_ovp_name+".class");
-//				System.out.println("/////||||\\\\\\\\\\\\\\\\\\deleting file "+second_ovp_name);
-                f.delete();
-            }
-            second_ovp.setPageName(firstPageName);
-            first_ovp = second_ovp;
+        else {
+            overflowPage.serialize();
         }
-        //shouldn't this be in an else part ?
-        first_ovp.serialize();
     }
 
     public int getTotalSize() throws DBAppException
     {
-        OverflowPage firstPage=deserializeOverflowPage(firstPageName);
-        return firstPage.getTotalSize();
+        OverflowPage overflowPage = deserializeOverflowPage(firstPageName);
+        return overflowPage.getTotalSize();
     }
 
 
     public String toString()
     {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder stringBuilder = new StringBuilder();
 
         try
         {
-            sb.append(deserializeOverflowPage(this.firstPageName));
+            stringBuilder.append(deserializeOverflowPage(this.firstPageName));
         }
         catch(DBAppException e){
-            System.out.println("WRONG first page name");
+            System.out.println("Error deserializing first page");
         }
-        return sb.toString();
+        return stringBuilder.toString();
     }
     public boolean isOverflow() {
         return true;
@@ -130,9 +98,9 @@ public class OverflowRef extends GeneralRef implements Serializable
     }
     @Override
     public void updateRef(String oldPage, String newPage) throws DBAppException {
-        OverflowPage firstPage=deserializeOverflowPage(firstPageName);
-        firstPage.updateRef(oldPage, newPage);
-        firstPage.serialize();
+        OverflowPage overflowPage = deserializeOverflowPage(firstPageName);
+        overflowPage.updateRef(oldPage, newPage);
+        overflowPage.serialize();
     }
 
     public ArrayList<Ref> getAllRef() throws DBAppException
@@ -140,10 +108,10 @@ public class OverflowRef extends GeneralRef implements Serializable
         return deserializeOverflowPage(firstPageName).getAllRefs();
     }
     public Ref getLastRef() throws DBAppException {
-        OverflowPage firstPage=deserializeOverflowPage(firstPageName);
-        Ref ref=firstPage.getLastRef();
-        firstPage.serialize();
-        return ref;
+        OverflowPage overflowPage = deserializeOverflowPage(firstPageName);
+        Ref lastRef = overflowPage.getLastRef();
+        overflowPage.serialize();
+        return lastRef;
     }
 
 }
