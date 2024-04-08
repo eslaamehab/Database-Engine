@@ -2,7 +2,6 @@ package src.Ref;
 
 import src.DBGeneralEngine.DBAppException;
 
-//import java.sql.Ref;
 import java.util.ArrayList;
 
 public abstract class GeneralRef {
@@ -13,19 +12,16 @@ public abstract class GeneralRef {
 
     public ArrayList<Ref> getAllRef() throws DBAppException
     {
-        ArrayList<Ref> results = new ArrayList<Ref>();
-        if(this instanceof Ref)
-        {
-            results.add((Ref)this);
+
+        ArrayList<Ref> allRef = new ArrayList<>();
+        if(this instanceof Ref) {
+            allRef.add((Ref)this);
         }
-        else
-        {
+        else {
             OverflowRef overflowRef = (OverflowRef) this;
-            results.addAll(overflowRef.getAllRef());
+            allRef.addAll(overflowRef.getAllRef());
         }
-
-        return results;
-
+        return allRef;
     }
 
 }
