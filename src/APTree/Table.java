@@ -10,6 +10,7 @@ import src.Ref.Ref;
 import src.Ref.GeneralRef;
 import src.Ref.OverflowRef;
 import src.DBGeneralEngine.SQLTerm;
+import src.DBGeneralEngine.DBApp;
 
 //import BPTree.BPTree;
 //import BPTree.BPTreeLeafNode;
@@ -336,41 +337,38 @@ public class Table implements Serializable {
                         break;
 
                     }
-                    if (((Comparable) hashtableColumnNameValue.get(clusteringKey)).compareTo(((Comparable) getMin(i))) >= 0
+                    if (((Comparable) hashtableColumnNameValue.get(clusteringKey)).compareTo(getMin(i)) >= 0
                             && ((Comparable) hashtableColumnNameValue.get(clusteringKey))
-                            .compareTo(((Comparable) getMax(i))) <= 0) {
+                            .compareTo(getMax(i)) <= 0) {
                         Page page = deserialize(pages.get(i));
                         page.deleteInPageWithBinarySearch(hashtableColumnNameValue, metaOfTable, clusteringKey, primaryPosition,
                                 clusteringKey);
-                        if (page.getTuples().size() == 0) {
+                        if (page.getTuples().isEmpty()) {
                             File file = new File("data: " + page.getPageName() + ".class");
                             file.delete();
                             pages.remove(i);
                             i--;
 
                         } else {
-                            Object min = page.getTuples().get(0).getAttributes().get(primaryPosition);
-                            Object max = page.getTuples().get(page.size() - 1).getAttributes().get(primaryPosition);
                             page.serialize();
                         }
 
                     }
                 }
-            } else {
+            }
+            else {
                 Vector<Integer> attributeIndex = getIntegers(hashtableColumnNameValue, metaOfTable);
                 for (int i = 0; i < pages.size(); i++) {
                     String pageName = pages.get(i);
                     Page p = deserialize(pageName);
                     p.deleteInPage(hashtableColumnNameValue, attributeIndex);
-                    if (p.getTuples().size() == 0) {
+                    if (p.getTuples().isEmpty()) {
                         File f = new File("data: " + pageName + ".class");
                         f.delete();
                         pages.remove(i);
                         i--;
 
                     } else {
-                        Object min = p.getTuples().get(0).getAttributes().get(primaryPosition);
-                        Object max = p.getTuples().get(p.size() - 1).getAttributes().get(primaryPosition);
                         p.serialize();
                     }
                 }
@@ -393,27 +391,24 @@ public class Table implements Serializable {
     }
 
     public Set<Ref> getRefFromBPTree(OverflowPage OFP) throws DBAppException {
-            Set<Ref> allReferences = new HashSet<Ref>();
-            Vector<Ref> xx = new Vector<Ref>();
+        Vector<Ref> xx = new Vector<>();
+            boolean isFound = false;
             boolean notFound = true;
-            boolean notFound1 = true;
-            boolean first = true;
+            boolean found = true;
             for (int i = 0; i < OFP.getRefs().size(); i++) {
-                if (first) {
+                if (found) {
                     xx.add(OFP.getRefs().get(0));
-                    first = false;
+                    found = false;
                 }
-                for (int j = 0; j < xx.size(); j++) {
-                    notFound = true;
-                    if (OFP.getRefs().get(i).getPage().equals(xx.get(j).getPage())) {
-                        notFound = false;
+                for (Ref ref : xx) {
+                    isFound = false;
+                    if (OFP.getRefs().get(i).getPage().equals(ref.getPage())) {
+                        isFound = true;
                         break;
-                    } else {
-
                     }
 
                 }
-                if (notFound == true) {
+                if (!isFound) {
                     xx.add(OFP.getRefs().get(i));
                 }
             }
@@ -423,53 +418,46 @@ public class Table implements Serializable {
                 nextOFP = OFP.deserialize(OFP.getNext());
                 while (notNull) {
                     for (int i = 0; i < nextOFP.getRefs().size(); i++) {
-                        for (int j = 0; j < xx.size(); j++) {
-                            notFound1 = true;
-                            if (nextOFP.getRefs().get(i).getPage().equals(xx.get(j).getPage())) {
-                                notFound1 = false;
+                        for (Ref ref : xx) {
+                            notFound = true;
+                            if (nextOFP.getRefs().get(i).getPage().equals(ref.getPage())) {
+                                notFound = false;
                                 break;
-                            } else {
-
                             }
 
                         }
-                        if (notFound1 == true) {
+                        if (notFound) {
                             xx.add(nextOFP.getRefs().get(i));
                         }
                     }
                     if (nextOFP.getNext() != null) {
-                        // nextOFP.serialize();
                         nextOFP = nextOFP.deserialize(nextOFP.getNext());
                     } else {
                         notNull = false;
                     }
 
                 }
-                // nextOFP.serialize();
             }
-            allReferences.addAll(xx);
-            // System.out.println(allReferences);
-            return allReferences;
+        return new HashSet<>(xx);
 
         }
 
-        public boolean invalidDelete(Hashtable<String, Object> htblColNameValue, Vector<String[]> metaOfTable)
+        public boolean invalidDelete(Hashtable<String, Object> hashtableColumnNameValue, Vector<String[]> metaOfTable)
                 throws DBAppException {
-            Set<String> keys = htblColNameValue.keySet();
+            Set<String> keys = hashtableColumnNameValue.keySet();
             for (String key : keys) {
                 int i;
                 for (i = 0; i < metaOfTable.size(); i++) {
                     if (metaOfTable.get(i)[1].equals(key)) {
                         try {
-                            Class colType = Class.forName(metaOfTable.get(i)[2]);
-                            Class parameterType = htblColNameValue.get(key).getClass();
-                            Class polyOriginal = Class.forName("java.awt.Polygon");
-                            if (colType == polyOriginal) {
-                                Polygons p = new Polygons((Polygon) htblColNameValue.get(key));
-                                htblColNameValue.put(key, p);
+                            Class<?> columnType = Class.forName(metaOfTable.get(i)[2]);
+                            Class<?> parameterType = hashtableColumnNameValue.get(key).getClass();
+                            Class<?> originalPolygon = Class.forName("java.awt.Polygon");
+                            if (columnType == originalPolygon) {
+                                CustomPolygon customPolygon = new CustomPolygon((Polygon) hashtableColumnNameValue.get(key));
+                                hashtableColumnNameValue.put(key, customPolygon);
                             }
-                            // System.out.println(colType + " " + parameterType);
-                            if (!colType.equals(parameterType))
+                            if (!columnType.equals(parameterType))
                                 return true;
                             else
                                 break;
@@ -484,152 +472,118 @@ public class Table implements Serializable {
             return false;
         }
 
-        public void setMinMax(Page p) throws DBAppException {
-            String pageName = p.getPageName();
+        public void setMinMax(Page page) throws DBAppException {
+            String pageName = page.getPageName();
+
             for (int i = 0; i < pages.size(); i++) {
                 if (pages.get(i).equals(pageName)) {
-                    if (p.getTuples().size() == 0) {
-                        File f = new File("data/" + pageName + ".class");
-//					System.out.println("/////||||\\\\\\\\\\\\\\\\\\deleting file " + pageName);
-                        f.delete();
+                    if (page.getTuples().isEmpty()) {
+                        File file = new File("data/" + pageName + ".class");
+                        file.delete();
                         pages.remove(i);
-                        //min.remove(i);
-                        //max.remove(i);
                         i--;
 
                     } else {
-                        Object minn = p.getTuples().get(0).getAttributes().get(primaryPos);
-                        Object maxx = p.getTuples().get(p.size() - 1).getAttributes().get(primaryPos);
-                        //min.setElementAt(minn, i);
-                        //max.setElementAt(maxx, i);
-                        p.serialize();
+                        page.serialize();
                     }
                 }
             }
         }
 
-        public ArrayList<String> indicesIHave(Hashtable<String, Object> htblColNameValue,
+        public ArrayList<String> indicesIHave(Hashtable<String, Object> hashtableColumnNameValue,
                                               Hashtable<String, TreeIndex> colNameTreeIndex) {
-            ArrayList<String> columns = new ArrayList<String>();
 
-            Set<String> keys = htblColNameValue.keySet();
-            for (String key : keys) {
-                columns.add(key);
-            }
-
-            ArrayList<String> indices = new ArrayList<String>();
+            Set<String> keys = hashtableColumnNameValue.keySet();
+            ArrayList<String> columns = new ArrayList<>(keys);
 
             Set<String> keys1 = colNameTreeIndex.keySet();
-            for (String key1 : keys1) {
-                indices.add(key1);
-            }
-            ArrayList<String> indicesGiven = new ArrayList<String>();
-            for (int i = 0; i < indices.size(); i++) {
-                for (int j = 0; j < columns.size(); j++) {
-                    if (indices.get(i).equals(columns.get(j))) {
-                        indicesGiven.add(columns.get(j));
+            ArrayList<String> indices = new ArrayList<>(keys1);
+            ArrayList<String> indicesGiven = new ArrayList<>();
+
+            for (String index : indices) {
+                for (String column : columns) {
+                    if (index.equals(column)) {
+                        indicesGiven.add(column);
 
                     }
                 }
             }
-            /*
-             * for (String s : htblColNameValue.keySet()) {if
-             * (colNameTreeIndex.contains(s))indicesGiven.add(s); }
-             */
-
             return indicesGiven;
         }
 
         public ArrayList<String> allTableIndices(Hashtable<String, TreeIndex> colNameBTreeIndex) {
-            ArrayList<String> allTableIndices = new ArrayList<String>();
             Set<String> keys = colNameBTreeIndex.keySet();
-            for (String key : keys) {
-                allTableIndices.add(key);
-            }
 
-            return allTableIndices;
+            return new ArrayList<>(keys);
         }
 
         public boolean clusteringKeyHasIndex(ArrayList<String> indices, String clusteringKey) {
             if (clusteringKey != null) {
-                for (int i = 0; i < indices.size(); i++) {
-                    if (indices.get(i).equals(clusteringKey)) {
+                for (String index : indices) {
+                    if (index.equals(clusteringKey)) {
                         return true;
                     }
                 }
-                return false;
-            } else
-                return false;
+            }
+            return false;
 
         }
 
-        public void createBTreeIndex(String strColName, BPTree bTree, int colPosition) throws DBAppException {
+        public void createBTreeIndex(String strColName, BPTree bTree, int columnPosition) throws DBAppException {
             if (colNameTreeIndex.containsKey(strColName)) {
-                throw new DBAppException("BTree index already exists on this column");
+                throw new DBAppException("BTree index exists on this columnPosition");
             } else {
                 colNameTreeIndex.put(strColName, bTree);
             }
             for (String str : pages) {
-                Page p = deserialize(str);
-                Ref recordReference = new Ref(p.getPageName());
+                Page page = deserialize(str);
+                Ref recordReference = new Ref(page.getPageName());
 
-                int i = 0;
-                for (Tuple t : p.getTuples()) {
-                    bTree.insert((Comparable) t.getAttributes().get(colPosition), recordReference);
-                    i++;
+                for (Tuple t : page.getTuples()) {
+                    bTree.insert((Comparable) t.getAttributes().get(columnPosition), recordReference);
                 }
-                p.serialize();
+                page.serialize();
             }
         }
 
-        public void createRTreeIndex(String strColName, RTree rTree, int colPosition) throws DBAppException{
+        public void createRTreeIndex(String strColName, RTree rTree, int columnPosition) throws DBAppException{
             if (colNameTreeIndex.containsKey(strColName)) {
-                // TODO: does this "STATEMENT" saying RTREE index here work correctly?
-                throw new DBAppException("RTree index already exists on this column");
+                throw new DBAppException("RTree index exists on this columnPosition");
             } else {
                 colNameTreeIndex.put(strColName, rTree);
             }
             for (String str : pages) {
-                Page p = deserialize(str);
+                Page page = deserialize(str);
 
-                int i = 0;
-                for (Tuple t : p.getTuples()) {
-                    Ref recordReference = new Ref(p.getPageName());
-                    rTree.insert((Comparable) t.getAttributes().get(colPosition), recordReference);
-                    i++;
+                for (Tuple t : page.getTuples()) {
+                    Ref recordReference = new Ref(page.getPageName());
+                    rTree.insert((Comparable) t.getAttributes().get(columnPosition), recordReference);
                 }
-                p.serialize();
+                page.serialize();
             }
         }
 
-        public static int getIndexNumber(String pName, int s) {
-            String num = pName.substring(s);
+        public static int getIndexNumber(String pageName, int i) {
+            String num = pageName.substring(i);
             return Integer.parseInt(num);
         }
 
-        public static Comparable parseObject(String strTableName, Object strKey) throws DBAppException {
+        public static Comparable parseObject(String tableName, Object strKey) throws DBAppException {
             try {
                 Vector meta = DBApp.readFile("data/metadata.csv");
                 Comparable key = null;
                 for (Object O : meta) {
                     String[] curr = (String[]) O;
-                    if (curr[0].equals(strTableName) && curr[3].equals("True")) // search in metadata for the table name and
-                    // the
-                    // key
+                    if (curr[0].equals(tableName) && curr[3].equals("True"))
                     {
-                        if (curr[2].equals("java.lang.Integer"))
-                            key = (Integer) (strKey);
-                        else if (curr[2].equals("java.lang.Double"))
-                            key = (Double) (strKey);
-                        else if (curr[2].equals("java.util.Date"))
-                            key = (Date) (strKey);
-                        else if (curr[2].equals("java.lang.Boolean"))
-                            key = (Boolean) (strKey);
-                        else if (curr[2].equals("java.awt.Polygon"))
-                            key = (Polygons) strKey;
-                        else {
-                            throw new DBAppException("Searching for a key of unknown type !");
-                        }
+                        key = switch (curr[2]) {
+                            case "java.lang.Integer" -> (Integer) (strKey);
+                            case "java.lang.Double" -> (Double) (strKey);
+                            case "java.util.Date" -> (Date) (strKey);
+                            case "java.lang.Boolean" -> (Boolean) (strKey);
+                            case "java.awt.Polygon" -> (CustomPolygon) strKey;
+                            default -> throw new DBAppException("Invalid key");
+                        };
                     }
                 }
                 return key;
@@ -638,29 +592,24 @@ public class Table implements Serializable {
             }
         }
 
-        public static Comparable parseString(String strTableName, String strKey) throws DBAppException {
+        public static Comparable parseString(String tableName, String strKey) throws DBAppException {
             try {
                 Vector meta = DBApp.readFile("data/metadata.csv");
                 Comparable key = null;
-                for (Object O : meta) {
-                    String[] curr = (String[]) O;
-                    if (curr[0].equals(strTableName) && curr[3].equals("True")) // search in metadata for the table name and
-                    // the
-                    // key
+                for (Object obj : meta) {
+                    String[] curr = (String[]) obj;
+                    if (curr[0].equals(tableName) && curr[3].equals("True"))
                     {
-                        if (curr[2].equals("java.lang.Integer"))
-                            key = Integer.parseInt(strKey);
-                        else if (curr[2].equals("java.lang.Double"))
-                            key = Double.parseDouble(strKey);
-                        else if (curr[2].equals("java.util.Date"))
-                            key = Date.parse(strKey);
-                        else if (curr[2].equals("java.lang.Boolean"))
-                            key = Boolean.parseBoolean(strKey);
-                        else if (curr[2].equals("java.awt.Polygon"))
-                            key = (Polygons) Polygons.parsePolygons(strKey);
-                        else {
-                            throw new DBAppException("Searching for a key of unknown type !");
-                        }
+                        key = switch (curr[2]) {
+                            case "java.lang.Integer" -> Integer.parseInt(strKey);
+                            case "java.lang.Double" -> Double.parseDouble(strKey);
+                            case "java.util.Date" -> Date.parse(strKey);
+                            case "java.lang.Boolean" -> Boolean.parseBoolean(strKey);
+//                            case "java.awt.Polygon" -> (CustomPolygon) CustomPolygon.parsePolygons(strKey);
+
+//                            either delete or create parse polygon ( most prob delete )
+                            default -> throw new DBAppException("Invalid key type");
+                        };
                     }
                 }
                 return key;
@@ -669,172 +618,132 @@ public class Table implements Serializable {
             }
         }
 
-        /**
-         * performs binary search
-         *
-         * @param strTableName
-         * @param strKey
-         *
-         * @return
-         * @throws DBAppException
-         */
-        public String SearchInTable(String strTableName, Object strKey) throws DBAppException {
-            return SearchInTable(strTableName, parseObject(strTableName, strKey));
+        public String SearchInTable(String tableName, Object strKey) throws DBAppException {
+            return SearchInTable(tableName, parseObject(tableName, strKey));
         }
 
-        public String SearchInTable(String strTableName, String strKey) throws DBAppException {
-            return SearchInTable(strTableName, parseString(strTableName, strKey));
+        public String SearchInTable(String tableName, String strKey) throws DBAppException {
+            return SearchInTable(tableName, parseString(tableName, strKey));
         }
 
-        public String SearchInTable(String strTableName, Comparable key) throws DBAppException {
+        public String SearchInTable(String tableName, Comparable key) throws DBAppException {
             try {
 
-                Table t = this;
-                Vector<String> pages = t.getPages();
-                // Vector<String> MinMax = t.getMin().toString() ;
+                Table table = this;
+                Vector<String> pages = table.getPages();
 
-                for (String s : pages) {
-                    Page p = Table.deserialize(s);
-                    int l = 0;
-                    int r = p.getTuples().size() - 1;
+                for (String str : pages) {
+                    Page p = Table.deserialize(str);
+                    int initLength = 0;
+                    int finalLength = p.getTuples().size() - 1;
 
-                    while (l <= r) {
-                        int m = l + (r - l) / 2;
+                    while (initLength <= finalLength) {
+                        int midLength = initLength + (finalLength - initLength) / 2;
 
-                        // Check if x is present at mid
-                        if (key.compareTo((p.getTuples().get(m)).getAttributes().get(t.getPrimaryPos())) == 0) {
-                            while (m > 0 && key
-                                    .compareTo((p.getTuples().get(m - 1)).getAttributes().get(t.getPrimaryPos())) == 0) {
-                                m--;
+                        if (key.compareTo((p.getTuples().get(midLength)).getAttributes().get(table.getPrimaryPosition())) == 0) {
+                            while (midLength > 0 && key
+                                    .compareTo((p.getTuples().get(midLength - 1)).getAttributes().get(table.getPrimaryPosition())) == 0) {
+                                midLength--;
                             }
-                            return p.getPageName() + "#" + m;
+                            return p.getPageName() + "#" + midLength;
                         }
 
-                        // If x greater, ignore left half
-                        if (key.compareTo((p.getTuples().get(m)).getAttributes().get(t.getPrimaryPos())) < 0)
-                            r = m - 1;
+                        if (key.compareTo((p.getTuples().get(midLength)).getAttributes().get(table.getPrimaryPosition())) < 0)
+                            finalLength = midLength - 1;
 
-                            // If x is smaller, ignore right half
                         else
-                            l = m + 1;
+                            initLength = midLength + 1;
                     }
-                    // p.serialize(); // added by abdo
                 }
-                // serialize(t); // addd by abdo
 
-                // return "-1";
-                throw new DBAppException("Searched for a tuple that does not exist in the table");
-            } catch (ClassCastException e) {
+                throw new DBAppException("Does not exist in table");
+            }
+            catch (ClassCastException e) {
                 throw new DBAppException("Class Cast Exception");
             }
         }
 
-        public Iterator<Tuple> selectFromTable(SQLTerm[] arrSQLTerms, String[] strarrOperators,
+        public Iterator<Tuple> selectFromTable(SQLTerm[] arrSQLTerms, String[] arrOperators,
                                                Vector<String[]> metaOfTable) throws DBAppException {
 
-            // check columns names and types validity
-            checkQueryValidity(arrSQLTerms, strarrOperators, metaOfTable);
+            // validate column name & type
+            validateQuery(arrSQLTerms, arrOperators, metaOfTable);
 
-            // this is for complete linear/binary search through the whole table
-            // Iterator<Tuple>
-            // s=inspectCols(arrSQLTerms,strarrOperators,metaOfTable);//method inspect cols
-            // determines which way to search through pages
-            // strarroperator operators there are checked in method setOperation and
-            // getArrayOfTuples
-            ArrayList<Tuple> current = new ArrayList(), next = new ArrayList();
-            int i = 0, j = 0;
-            for (; i < strarrOperators.length && strarrOperators[i] != null; i++)
-                ;
-            for (; j < arrSQLTerms.length && arrSQLTerms[i] != null; j++)
-                ;
+            ArrayList<Tuple> current, next;
+            int i = 0;
+            int j = 0;
+
+            for (; i < arrOperators.length && arrOperators[i] != null; i++);
+            for (; j < arrSQLTerms.length && arrSQLTerms[i] != null; j++);
+
             if (j != i + 1)
-                throw new DBAppException("Number of terms does not match number of operators");
-            if (i == 0) { // only one attribute like , where id=5
-                int pos = getColPositionWithinTuple(arrSQLTerms[0]._strColumnName, metaOfTable);
-                current = getArrayOfTuples(arrSQLTerms[0]._strColumnName, arrSQLTerms[0]._objValue,
-                        arrSQLTerms[0]._strOperator, pos);
+                throw new DBAppException("Number operators not equal number of SQL terms");
+            if (i == 0) {
+                int position = getColPositionWithinTuple(arrSQLTerms[0].getStrColumnName(), metaOfTable);
+                current = getArrayOfTuples(arrSQLTerms[0].getStrColumnName(), arrSQLTerms[0].getObjValue(),
+                        arrSQLTerms[0].getStrOperator(), position);
             } else {
-                // boolean[]chosen=new boolean[i];
-                int linearScGu = linearScanGuaranteed(arrSQLTerms, strarrOperators);
-                // System.out.println();
-//			System.out.println((linearScGu == 1) ? "linear scan"
-//					: (linearScGu == 2) ? "binary and indx only"
-//							: "sweet lovely indices");
+                int linearScGu = linearScanGuaranteed(arrSQLTerms, arrOperators);
 
                 if (linearScGu == 1) {
-                    // at least non indexed column preceeded by or/xor , question if only the
-                    // cluster is the non indexed
-                    // preceeded by or/xor should we also do linear??
-                    current = doLinearScan(arrSQLTerms, strarrOperators, metaOfTable);
-                } else if (linearScGu == 2) {
-                    // single clustering without index preceeded or sufficed with or/xor , no other
-                    // non indexed appears in query
+                    current = doLinearScan(arrSQLTerms, arrOperators, metaOfTable);
+                }
+                else if (linearScGu == 2) {
 
-                    int pos = getColPositionWithinTuple(arrSQLTerms[0]._strColumnName, metaOfTable);
-                    current = getArrayOfTuples(arrSQLTerms[0]._strColumnName, arrSQLTerms[0]._objValue,
-                            arrSQLTerms[0]._strOperator, pos);
-                    // System.out.println(Arrays.asList(current));
+                    int pos = getColPositionWithinTuple(arrSQLTerms[0].getStrColumnName(), metaOfTable);
+                    current = getArrayOfTuples(arrSQLTerms[0].getStrColumnName(), arrSQLTerms[0].getObjValue(),
+                            arrSQLTerms[0].getStrOperator(), pos);
                     for (int k = 1; k < arrSQLTerms.length; k++) {
-                        pos = getColPositionWithinTuple(arrSQLTerms[k]._strColumnName, metaOfTable);
-                        if (strarrOperators[k - 1].toLowerCase().equals("and")) { // operation on the current
+                        pos = getColPositionWithinTuple(arrSQLTerms[k].getStrColumnName(), metaOfTable);
+                        if (arrOperators[k - 1].equalsIgnoreCase("and")) {
                             for (int z = 0; z < current.size(); z++) {
                                 if (!checkTupleInCurrent(arrSQLTerms[k], current.get(z), pos)) {
                                     current.remove(z--);
                                 }
                             }
                         } else {
-                            // set operation between 2 indices
-                            next = getArrayOfTuples(arrSQLTerms[k]._strColumnName, arrSQLTerms[k]._objValue,
-                                    arrSQLTerms[k]._strOperator, pos);
-                            current = setOperation(current, next, strarrOperators[k - 1]);
+                            next = getArrayOfTuples(arrSQLTerms[k].getStrColumnName(), arrSQLTerms[k].getObjValue(),
+                                    arrSQLTerms[k].getStrOperator(), pos);
+                            current = setOperation(current, next, arrOperators[k - 1]);
                         }
                     }
 
                 } else {
-                    int leadingIndexPosition = getFirstIndexPos(arrSQLTerms); // index to start with
-                    // System.out.println(leadingIndexPosition);
+                    int leadingIndexPosition = getFirstIndexPos(arrSQLTerms);
                     if (leadingIndexPosition == -1) {
-                        // no existing indices this case all the operators are ands , so will we go
-                        // linear
-                        // or if the cluster exists we search with it
-                        int pos = getColPositionWithinTuple(strClusteringKey, metaOfTable);
                         current = (clusterExists(arrSQLTerms))
                                 ? binaryWithCluster(arrSQLTerms, metaOfTable)
-                                : doLinearScan(arrSQLTerms, strarrOperators, metaOfTable);
-                    } else {// its guranteed inshallah that first index is either in first position
-                        // or all its previous columns are anded to it(clustering key excluded)
-                        String firstIndex = arrSQLTerms[leadingIndexPosition]._strColumnName;
-                        // System.out.println(firstIndex);
-                        Object value = arrSQLTerms[leadingIndexPosition]._objValue;
-                        String op = arrSQLTerms[leadingIndexPosition]._strOperator;
-                        int pos = getColPositionWithinTuple(firstIndex, metaOfTable);
-                        current = getArrayOfTuples(firstIndex, value, op, pos);
-                        // System.out.println(Arrays.asList(current));
-                        // filters what come before index
+                                : doLinearScan(arrSQLTerms, arrOperators, metaOfTable);
+                    }
+                    else {
+                        String firstIndex = arrSQLTerms[leadingIndexPosition].getStrColumnName();
+                        Object objectValue = arrSQLTerms[leadingIndexPosition].getObjValue();
+                        String operator = arrSQLTerms[leadingIndexPosition].getStrOperator();
+                        int position = getColPositionWithinTuple(firstIndex, metaOfTable);
+                        current = getArrayOfTuples(firstIndex, objectValue, operator, position);
+
                         for (int k = leadingIndexPosition - 1; k >= 0; k--) {
-                            pos = getColPositionWithinTuple(arrSQLTerms[k]._strColumnName, metaOfTable);
-                            // if(arrSQLTerms[k]._strColumnName.equals(strClusteringKey))
+                            position = getColPositionWithinTuple(arrSQLTerms[k].getStrColumnName(), metaOfTable);
                             for (int z = 0; z < current.size(); z++) {
 
-                                if (!checkTupleInCurrent(arrSQLTerms[k], current.get(z), pos)) {
+                                if (!checkTupleInCurrent(arrSQLTerms[k], current.get(z), position)) {
                                     current.remove(z--);
                                 }
                             }
-                        } // proceed with terms after chosen column
+                        }
                         for (int k = leadingIndexPosition + 1; k < arrSQLTerms.length; k++) {
-                            pos = getColPositionWithinTuple(arrSQLTerms[k]._strColumnName, metaOfTable);
-                            if (strarrOperators[k - 1].toLowerCase().equals("and")) { // operation on the current
+                            position = getColPositionWithinTuple(arrSQLTerms[k].getStrColumnName(), metaOfTable);
+                            if (arrOperators[k - 1].equalsIgnoreCase("and")) {
                                 for (int z = 0; z < current.size(); z++) {
-                                    if (!checkTupleInCurrent(arrSQLTerms[k], current.get(z), pos)) {
+                                    if (!checkTupleInCurrent(arrSQLTerms[k], current.get(z), position)) {
                                         current.remove(z--);
                                     }
                                 }
-                            } else {
-                                // set operation between 2 indices
-                                next = getArrayOfTuples(arrSQLTerms[k]._strColumnName, arrSQLTerms[k]._objValue,
-                                        arrSQLTerms[k]._strOperator, pos);
-                                // g System.out.println(Arrays.asList(next));
-                                current = setOperation(current, next, strarrOperators[k - 1]);
+                            }
+                            else {
+                                next = getArrayOfTuples(arrSQLTerms[k].getStrColumnName(), arrSQLTerms[k].getObjValue(),
+                                        arrSQLTerms[k].getStrOperator(), position);
+                                current = setOperation(current, next, arrOperators[k - 1]);
                             }
                         }
                     }
@@ -1399,7 +1308,7 @@ public class Table implements Serializable {
             }
         }
 
-        public void checkQueryValidity(SQLTerm[] arrSQLTerms, String[] operators, Vector<String[]> metaOfTable)
+        public void validateQuery(SQLTerm[] arrSQLTerms, String[] operators, Vector<String[]> metaOfTable)
                 throws DBAppException {
             for (SQLTerm x : arrSQLTerms) {
                 if (x==null) {
