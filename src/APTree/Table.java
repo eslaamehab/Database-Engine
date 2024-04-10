@@ -35,6 +35,21 @@ public class Table implements Serializable {
 
 
 
+    public void serialize(String address) throws IOException{
+        try {
+            FileOutputStream fileOut = new FileOutputStream(address); ///Users/moham/Desktop/Untitled.ser
+            ObjectOutputStream out = new ObjectOutputStream(fileOut);
+            out.writeObject(pages);
+            out.close();
+            fileOut.close();
+            //System.out.printf("Serialized data is saved in /tmp/employee.ser");
+        } catch (IOException i) {
+            i.printStackTrace();
+        }
+    }
+
+
+
     public int getMaxRowsInPage() {
         return maxRowsInPage;
     }
@@ -1402,9 +1417,21 @@ public class Table implements Serializable {
             return sb.toString();
         }
 
-        public static void main(String[] args) {
+        public static void main(String[] args) throws IOException {
 
             // initialize here
+
+            Hashtable <String ,String> ht = new Hashtable<String, String>();
+            String line ;
+            ArrayList <String> tablenames  =  new ArrayList <> ();
+            BufferedReader br = new BufferedReader(new FileReader("datafile.csv"));
+
+            while ((line = br.readLine()) != null) {
+                // use comma as separator
+                String[] data = line.split(",");
+                ht.put(data[4],data[0]);
+            }
+            System.out.println(ht.toString());
 
         }
 
