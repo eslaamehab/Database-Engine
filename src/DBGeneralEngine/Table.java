@@ -1,16 +1,14 @@
-package src.APTree;
+package src.DBGeneralEngine;
 
 
 import java.awt.Polygon;
 import java.io.*;
 import java.util.*;
 
-import src.DBGeneralEngine.DBAppException;
+import src.APTree.*;
 import src.Ref.Ref;
 import src.Ref.GeneralRef;
 import src.Ref.OverflowRef;
-import src.DBGeneralEngine.SQLTerm;
-import src.DBGeneralEngine.DBApp;
 
 //import BPTree.BPTree;
 //import BPTree.BPTreeLeafNode;
@@ -25,6 +23,7 @@ import src.DBGeneralEngine.DBApp;
 
 public class Table implements Serializable {
 
+    /*      Getters & Setters     */
         private Vector<String> pages = new Vector<>();
         private int maxRowsInPage;
         private String tableName;
@@ -356,7 +355,7 @@ public class Table implements Serializable {
                             && ((Comparable) hashtableColumnNameValue.get(clusteringKey))
                             .compareTo(getMax(i)) <= 0) {
                         Page page = deserialize(pages.get(i));
-                        page.deleteInPageWithBinarySearch(hashtableColumnNameValue, metaOfTable, clusteringKey, primaryPosition,
+                        page.deleteInPageWithBinarySearch(hashtableColumnNameValue, metaOfTable, primaryPosition,
                                 clusteringKey);
                         if (page.getTuples().isEmpty()) {
                             File file = new File("data: " + page.getPageName() + ".class");
