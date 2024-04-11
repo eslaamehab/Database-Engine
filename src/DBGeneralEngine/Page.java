@@ -1,6 +1,7 @@
-package src.APTree;
+package src.DBGeneralEngine;
 
-import src.DBGeneralEngine.DBAppException;
+import src.APTree.TreeIndex;
+import src.APTree.Tuple;
 import src.Ref.GeneralRef;
 import src.Ref.OverflowRef;
 
@@ -13,36 +14,46 @@ import java.util.Vector;
 
 public class Page implements Serializable {
 
+    /*      Attributes     */
     private Vector vector = new Vector();
     private Vector<Tuple> tuples;
     private String pageName;
 
 
-    // constructor
+    /*      Constructor     */
     public Page(String pageName) {
         tuples = new Vector<Tuple>();
         this.pageName = pageName;
     }
 
-    // getter and setters
+
+    /*      Getters & Setters     */
     public Vector getVector() {
         return vector;
     }
+
     public void setVector(Vector vector) {
         this.vector = vector;
     }
+
     public Vector<Tuple> getTuples() {
         return tuples;
     }
+
     public void setTuples(Vector<Tuple> tuples) {
         this.tuples = tuples;
     }
+
     public String getPageName() {
         return pageName;
     }
+
     public void setPageName(String pageName) {
         this.pageName = pageName;
     }
+
+
+    /*      Methods    */
     public int size() {
         return tuples.size();
     }
@@ -50,8 +61,6 @@ public class Page implements Serializable {
     public int binarySearch(Comparable key, int pos) {
         int result = binarySearchLastOccurrence(key, pos);
         return (result == -1) ? ((binarySearchFirstGreater(key, pos) == -1) ? tuples.size() : binarySearchFirstGreater(key, pos)) : result;
-
-
     }
 
     public int binarySearchLastOccurrence(Comparable key, int pos) {
@@ -84,7 +93,7 @@ public class Page implements Serializable {
             Comparable currentValue = (Comparable) tuples.get(mid).getAttributes().get(pos);
             if (currentValue.compareTo(key) <= 0) {
                 low = mid + 1;
-            } else if(currentValue.compareTo(mid) > 0 ){
+            } else if (currentValue.compareTo(mid) > 0) {
                 result = mid;
                 high = mid - 1;
             }
@@ -93,7 +102,7 @@ public class Page implements Serializable {
     }
 
 
-    public void serialize(Page page, String address) throws IOException {
+    public void serialize(Page page, String address) {
         try {
             FileOutputStream fileOut = new FileOutputStream(address);
             ObjectOutputStream out = new ObjectOutputStream(fileOut);
@@ -102,21 +111,22 @@ public class Page implements Serializable {
             fileOut.close();
         } catch (IOException i) {
             i.printStackTrace();
+            System.out.println("IO Exception above");
         }
     }
 
-    public void deserialize(Page page, String address){
+    public void deserialize(String address) {
         try {
             FileInputStream fileIn = new FileInputStream(address);
             ObjectInputStream stream = new ObjectInputStream(fileIn);
-            page = (Page) stream.readObject();
+            Page page = (Page) stream.readObject();
             stream.close();
             fileIn.close();
         } catch (IOException i) {
-            System.out.println("IO");
             i.printStackTrace();
+            System.out.println("IO Exception above");
         } catch (ClassNotFoundException c) {
-            System.out.println("class not found");
+            System.out.println("class not found below");
             c.printStackTrace();
         }
     }
@@ -124,8 +134,8 @@ public class Page implements Serializable {
     public void insertIntoPage(Tuple x, int pos) {
         Comparable nKey = (Comparable) x.getAttributes().get(pos);
 
-        for(int i=0;i<tuples.size();i++){
-            if(nKey.compareTo(tuples.get(i).getAttributes().get(pos))<0){
+        for (int i = 0; i < tuples.size(); i++) {
+            if (nKey.compareTo(tuples.get(i).getAttributes().get(pos)) < 0) {
                 tuples.insertElementAt(x, i);
                 return;
             }
@@ -135,13 +145,14 @@ public class Page implements Serializable {
 
     public void serialize() throws DBAppException {
         try {
-            FileOutputStream fileOut = new FileOutputStream("data/" + pageName + ".class");
+            FileOutputStream fileOut = new FileOutputStream("data/" + pageName);
             ObjectOutputStream out = new ObjectOutputStream(fileOut);
             out.writeObject(this);
             out.close();
             fileOut.close();
         } catch (IOException e) {
-            throw new DBAppException("IO Exception in Page: "+pageName);
+            e.printStackTrace();
+            throw new DBAppException("IO Exception in Page: " + pageName);
         }
     }
 
@@ -169,36 +180,35 @@ public class Page implements Serializable {
 
     public void deleteInPageForRef(Vector<String[]> metaOfTable, int orgPos, String clusteringKey,
                                    Hashtable<String, TreeIndex> colNameTreeIndex, Hashtable<String, Object> hashtableColumnNameValue,
-                                   ArrayList<String> allIndices, boolean isCluster) throws DBAppException{
-        int index = 0;
+                                   ArrayList<String> allIndices, boolean isCluster) throws DBAppException {
+        int n = 0;
         int lastOccurrence = tuples.size();
         if (isCluster) {
             lastOccurrence = binarySearchLastOccurrence((Comparable) hashtableColumnNameValue.get(clusteringKey), orgPos) + 1;
-            for (index = lastOccurrence - 1; index >= 0 && ((Comparable)tuples.get(index).getAttributes().get(orgPos))
-//					.equals(hashtableColumnNameValue.get(clusteringKey)); index--)
-                    .compareTo(hashtableColumnNameValue.get(clusteringKey))==0; index--);
-            index++;
+            for (n = lastOccurrence - 1; n >= 0 && ((Comparable) tuples.get(n).getAttributes().get(orgPos))
+                    .compareTo(hashtableColumnNameValue.get(clusteringKey)) == 0; n--)
+                ;
+            n++;
         }
 
-        ArrayList<String> x = new ArrayList<>();
-        for (int i = 0; i < metaOfTable.size(); i++) {
-            x.add(metaOfTable.get(i)[1]);
+        ArrayList<String> arrayList = new ArrayList<>();
+        for (String[] strings : metaOfTable) {
+            arrayList.add(strings[1]);
         }
-        for (int k = index; k <= Math.min(tuples.size()-1, lastOccurrence); k++) {
-            Tuple t = tuples.get(k);
-            if (validDelete(x, hashtableColumnNameValue, t)) {
+        for (int k = n; k <= Math.min(tuples.size() - 1, lastOccurrence); k++) {
+            Tuple tuple = tuples.get(k);
+            if (validDelete(arrayList, hashtableColumnNameValue, tuple)) {
                 for (int i = 0; i < tuples.get(k).getAttributes().size() - 2; i++) {
                     for (String allIndex : allIndices) {
-                        if (allIndex.equals(x.get(i))) {
+                        if (allIndex.equals(arrayList.get(i))) {
                             TreeIndex tree = colNameTreeIndex.get(allIndex);
-                            GeneralRef generalRef = tree.search((Comparable) t.getAttributes().get(i));
+                            GeneralRef generalRef = tree.search((Comparable) tuple.getAttributes().get(i));
                             if (generalRef instanceof Ref) {
                                 tree.delete((Comparable) tuples.get(k).getAttributes().get(i));
                             } else {
                                 if (generalRef instanceof OverflowRef) {
-                                    OverflowRef overflowReference = (OverflowRef) generalRef;
                                     {
-                                        tree.delete((Comparable) t.getAttributes().get(i), this.pageName);
+                                        tree.delete((Comparable) tuple.getAttributes().get(i), this.pageName);
                                     }
                                 }
                             }
@@ -212,17 +222,17 @@ public class Page implements Serializable {
     }
 
     public void deleteInPageWithBinarySearch(Hashtable<String, Object> hashtableColumnNameValue, Vector<String[]> metaOfTable,
-                                   String clusteringKeyValue, int orgPos, String clusteringKey) {
+                                             int orgPos, String clusteringKey) {
 
-        int index = binarySearchLastOccurrence((Comparable) hashtableColumnNameValue.get(clusteringKey), orgPos);
-        ArrayList<String> x = new ArrayList<>();
-        for (int i = 0; i < metaOfTable.size(); i++) {
-            x.add(metaOfTable.get(i)[1]);
+        int n = binarySearchLastOccurrence((Comparable) hashtableColumnNameValue.get(clusteringKey), orgPos);
+        ArrayList<String> arrayList = new ArrayList<>();
+        for (String[] strings : metaOfTable) {
+            arrayList.add(strings[1]);
         }
-        for (int i = index; i >= 0; i--) {
-            Tuple t = tuples.get(i);
-            if (t.getAttributes().get(orgPos).equals(hashtableColumnNameValue.get(clusteringKey))) {
-                if (validDelete(x, hashtableColumnNameValue, t)) {
+        for (int i = n; i >= 0; i--) {
+            Tuple tuple = tuples.get(i);
+            if (tuple.getAttributes().get(orgPos).equals(hashtableColumnNameValue.get(clusteringKey))) {
+                if (validDelete(arrayList, hashtableColumnNameValue, tuple)) {
                     tuples.remove(i);
                     i++;
                 }
@@ -232,14 +242,11 @@ public class Page implements Serializable {
 
     public boolean validDelete(ArrayList<String> x, Hashtable<String, Object> hashtableColumnNameValue, Tuple t) {
         Set<String> keys = hashtableColumnNameValue.keySet();
-        ArrayList<String> y = new ArrayList<>();
-        for (String key : keys) {
-            y.add(key);
-        }
-        for (int i = 0; i < y.size(); i++) {
+        ArrayList<String> arrayList = new ArrayList<>(keys);
+        for (String s : arrayList) {
             for (int j = 0; j < x.size(); j++) {
-                if (y.get(i).equals(x.get(j))) {
-                    if (!(hashtableColumnNameValue.get(y.get(i)).equals(t.getAttributes().get(j)))) {
+                if (s.equals(x.get(j))) {
+                    if (!(hashtableColumnNameValue.get(s).equals(t.getAttributes().get(j)))) {
                         return false;
                     }
                 }
@@ -250,8 +257,8 @@ public class Page implements Serializable {
 
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
-        for (Tuple obj : tuples) {
-            stringBuilder.append(obj.toString());
+        for (Tuple tuple : tuples) {
+            stringBuilder.append(tuple.toString());
             stringBuilder.append("\n");
         }
         return stringBuilder + "\n";
