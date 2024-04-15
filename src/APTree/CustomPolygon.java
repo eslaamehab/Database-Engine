@@ -5,13 +5,17 @@ import java.io.Serializable;
 
 public class CustomPolygon implements Comparable<CustomPolygon>, Serializable {
 
-
+        /*      Attributes    */
 public Polygon polygon;
 
+
+        /*      Constructor     */
 public CustomPolygon(Polygon polygon){
         this.polygon=polygon;
         }
 
+
+        /*      Methods     */
 @Override
 public int compareTo(CustomPolygon customPolygon){
         Dimension dimension = polygon.getBounds().getSize();
@@ -20,9 +24,7 @@ public int compareTo(CustomPolygon customPolygon){
         dimension = customPolygon.polygon.getBounds().getSize();
         int customPolygonArea = dimension.width * dimension.height;
 
-        int AreaDifference = polygonArea - customPolygonArea;
-
-        return AreaDifference;
+    return polygonArea - customPolygonArea;
         }
 
 @Override
@@ -41,11 +43,11 @@ public String toString(){
 
         for(int i=0; i<y.length; i++){
 
-        stringBuilder.append("("+x[i]+", "+y[i]+") ");
+        stringBuilder.append("(").append(x[i]).append(", ").append(y[i]).append(") ");
         }
         Dimension dimension = polygon.getBounds().getSize();
         int polygonArea = dimension.width * dimension.height;
-        stringBuilder.append("Area: "+polygonArea);
+        stringBuilder.append("Area: ").append(polygonArea);
 
         return stringBuilder.toString();
         }
