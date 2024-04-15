@@ -7,12 +7,29 @@ import static java.util.Objects.hash;
 
 public class APTreeTest implements Serializable {
 
-    private Vector<Object> inserts;
-    private static long nextId = 0l;
-    private long id;
+    /*      Attributes     */
+    private final Vector<Object> inserts;
+    private static long nextId = 0L;
+    private final long id;
     private final String tableName;
 
+
+
+    /*      Constructor     */
+    public APTreeTest(String tableName) throws IOException {
+        this.tableName = tableName;
+        inserts = new Vector<>();
+        nextId = getNextId();
+        this.id = nextId++;
+        saveNextId();
+    }
+
+
+    /*      Methods     */
+
     public void saveNextId() throws IOException {
+
+//        Add the path below
         File file = new File("Data: " + tableName+" Next ID");
         if (!file.exists())
             file.delete();
@@ -23,37 +40,32 @@ public class APTreeTest implements Serializable {
     }
 
     public long getNextId() {
-        long x = 0;
+        long id = 0;
         try {
-
-            File f = new File("Data: " + tableName+" Next ID");
-            if (!f.exists())
+//            Add the path below
+            File file = new File("Data: " + tableName+" Next ID");
+            if (!file.exists())
                 return 0;
-            FileInputStream file = new FileInputStream("Add path here/" + tableName+" Next ID");
-            ObjectInputStream in = new ObjectInputStream(file);
-             x = (long) in.readObject();
+
+//            Add the path below
+            FileInputStream fileInputStream = new FileInputStream("Data/ " + tableName+" Next ID");
+            ObjectInputStream in = new ObjectInputStream(fileInputStream);
+             id = (long) in.readObject();
 
             in.close();
-            file.close();
+            fileInputStream.close();
         }
 
         catch (IOException ex) {
             System.out.println("IOException");
-            // ex.printStackTrace();
+//            ex.printStackTrace();
         }
 
         catch (ClassNotFoundException ex) {
             System.out.println("ClassNotFoundException");
+//            ex.printStackTrace();
         }
-        return x;
-    }
-
-    public APTreeTest(String tableName) throws IOException {
-        this.tableName = tableName;
-        inserts = new Vector<Object>();
-        nextId = getNextId();
-        this.id = nextId++;
-        saveNextId();
+        return id;
     }
 
     public boolean hasId(long id) {
@@ -86,11 +98,11 @@ public class APTreeTest implements Serializable {
     }
 
     public String toString() {
-        String str = "";
+        StringBuilder stringBuilder = new StringBuilder();
         for (Object obj : inserts)
-            str += obj.toString() + ", ";
-        str += " insert id " + id;
-        return str;
+            stringBuilder.append(obj.toString()).append(", ");
+        stringBuilder.append("inserting id").append(id);
+        return stringBuilder.toString();
     }
 
     @Override
@@ -105,16 +117,16 @@ public class APTreeTest implements Serializable {
     public boolean equals(Object obj) {
         if (this == obj)
             return true;
-        if (!(obj instanceof APTreeTest))
+        if (!(obj instanceof APTreeTest testAPTree))
             return false;
-        APTreeTest testAPTree = (APTreeTest) obj;
-         System.out.println(getId() == testAPTree.getId());
+        System.out.println(getId() == testAPTree.getId());
         return getId() == testAPTree.getId() && inserts.equals(testAPTree.inserts);
     }
 
     public static void main(String[] args) throws IOException {
 
-        // instantiate entries here
+        // instantiate dummmy entries here
+
     }
 }
 
