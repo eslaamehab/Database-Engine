@@ -5,24 +5,25 @@ import java.util.Vector;
 
 public class Tuple implements Serializable {
 
+    /*      Attributes     */
     private Vector attributes = new Vector();
-    private Object compare1, compare2;
 
 
+    /*      Getters & Setters     */
     public Vector getAttributes() {
         return attributes;
     }
-
     public void setAttributes(Vector attributes) {
         this.attributes = attributes;
     }
 
 
+    /*      Methods     */
     public boolean equals(Object obj) {
         Tuple x=(Tuple)obj;
         Tuple y= this;
-        compare1 = x.attributes.get(attributes.size()-1) ;
-        compare2 = y.attributes.get(attributes.size()-1) ;
+        Object compare1 = x.attributes.get(attributes.size() - 1);
+        Object compare2 = y.attributes.get(attributes.size() - 1);
 
         return compare1.equals(compare2);
     }
@@ -36,14 +37,13 @@ public class Tuple implements Serializable {
     }
 
     public String toString() {
-        String str = "";
+        StringBuilder stringBuilder = new StringBuilder();
 
         for (int i=0;i<attributes.size()-1;i++) {
             Object x = attributes.get(i);
-            str += (x != null) ? (x + "\t") : ("null\n");
+            stringBuilder.append((x != null) ? (x + "\t") : ("null\n"));
         }
-        return str;
+        return stringBuilder.toString();
     }
-
 
 }
