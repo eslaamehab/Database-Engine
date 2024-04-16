@@ -9,12 +9,14 @@ import java.util.Vector;
 
 public class OverflowPage implements Serializable {
 
+    /*      Attributes     */
     private String nextRef;
     private Vector<Ref> refs;
-
-    private int maxNodeSize;
+    private final int maxNodeSize;
     private String pageName;
 
+
+    /*      Constructor     */
     public OverflowPage(int maxNodeSize) throws DBAppException {
         this.maxNodeSize=maxNodeSize;
         refs = new Vector<>(maxNodeSize);
@@ -22,13 +24,33 @@ public class OverflowPage implements Serializable {
         String lastRef = getFromMetaDataTree();
         pageName = "OverflowPage" + lastRef;
     }
+
+
+    /*      Getters & Setters     */
     public Vector<Ref> getRefs() {
         return refs;
     }
     public void setRefs(Vector<Ref> refs) {
         this.refs = refs;
     }
+    public String getPageName() {
+        return pageName;
+    }
+    public void setPageName(String pageName) {
+        this.pageName = pageName;
+    }
+    public String getNext() {
+        return nextRef;
+    }
+    public OverflowPage getNext1() throws DBAppException {
+        if(nextRef==null)
 
+            return null;
+        return deserialize(nextRef);
+    }
+    public void setNext(String next) {
+        this.nextRef = next;
+    }
     public int getTotalSize() throws DBAppException
     {
         if(nextRef == null)
@@ -37,7 +59,62 @@ public class OverflowPage implements Serializable {
         OverflowPage overflowPage = deserialize(nextRef);
         return refs.size() + overflowPage.getTotalSize();
     }
+    public ArrayList<Ref> getAllRefs() throws DBAppException {
+        ArrayList<Ref> refRes = new ArrayList<>(refs);
+        if(nextRef != null)
+        {
+            try
+            {
+                refRes.addAll(deserialize(nextRef).getAllRefs());
+            }
+            catch(DBAppException e)
+            {
+                e.printStackTrace();
+                throw new DBAppException("Exception above while getting overflow page");
+            }
+        }
+        return refRes;
+    }
+    public Ref getLastRef() throws DBAppException {
+        if(nextRef!=null){
+            OverflowPage nextPage = deserialize(nextRef);
+            Ref ref = nextPage.getLastRef();
+            nextPage.serialize();
+            return ref;
+        }
+        else
+        {
+            return refs.get(refs.size()-1);
+        }
+    }
+    public Ref getMaxRefPage(int tableLength) throws DBAppException {
+        return getMaxRefPage(tableLength,refs.get(0));
+    }
+    private Ref getMaxRefPage(int tableLength, Ref ref) throws DBAppException {
+        for (Ref value : refs) {
 
+            if (getIntInRefPage(ref, tableLength) < getIntInRefPage(value, tableLength)) {
+                ref = value;
+            }
+        }
+        if(nextRef == null)
+        {
+            return ref;
+        }
+        else
+        {
+            OverflowPage nextPage = deserialize(nextRef);
+            Ref ref2 = nextPage.getMaxRefPage(tableLength, ref);
+            nextPage.serialize();
+            return ref2;
+        }
+    }
+    private static int getIntInRefPage(Ref ref,int tableLength){
+        return Integer.parseInt(ref.getPage().substring(tableLength));
+    }
+
+
+    /*      Methods     */
     public void addRecord(Ref recordRef) throws DBAppException{
         if (refs.size()<maxNodeSize)
         {
@@ -80,7 +157,7 @@ public class OverflowPage implements Serializable {
 
             OverflowPage overflowPage = deserialize(nextRef);
             overflowPage.deleteRecord(page_name);
-            if(overflowPage.refs.size() == 0)
+            if(overflowPage.refs.isEmpty())
             {
                 this.nextRef = overflowPage.nextRef;
                 File f = new File("data: " + overflowPage.getPageName()+".class");
@@ -93,25 +170,6 @@ public class OverflowPage implements Serializable {
         this.serialize();
     }
 
-    public String getNext() {
-        return nextRef;
-    }
-    public OverflowPage getNext1() throws DBAppException {
-        if(nextRef==null)
-
-            return null;
-        return deserialize(nextRef);
-    }
-    public void setNext(String next) {
-        this.nextRef = next;
-    }
-    public String getPageName() {
-        return pageName;
-    }
-
-    public void setPageName(String pageName) {
-        this.pageName = pageName;
-    }
     public void updateRef(String oldPage, String newPage) throws DBAppException  {
         int i =0;
         for(; i<refs.size(); i++){
@@ -138,9 +196,10 @@ public class OverflowPage implements Serializable {
             fileOut.close();
         }
         catch(IOException e) {
-            throw new DBAppException("IO Exception");
+            throw new DBAppException("IO Exception in "+ this.getPageName());
         }
     }
+
     public OverflowPage deserialize(String name) throws DBAppException{
         try {
             FileInputStream fileIn = new FileInputStream("data: "+ name + ".class");
@@ -151,16 +210,20 @@ public class OverflowPage implements Serializable {
             return overflowPage;
         }
         catch(IOException e) {
-            throw new DBAppException("IO Exception");
+            e.printStackTrace();
+            throw new DBAppException("IO Exception in "+ name);
         }
         catch(ClassNotFoundException e) {
-            throw new DBAppException("Class Not Found Exception");
+            e.printStackTrace();
+            throw new DBAppException("Class Not Found Exception in " + name + ".class");
         }
 
     }
+
     public static Vector readFile(String path) throws DBAppException {
         try {
             String currentLine;
+//            modify below path
             FileReader fileReader = new FileReader(path);
             BufferedReader bufferedReader = new BufferedReader(fileReader);
             Vector metadata = new Vector();
@@ -174,6 +237,7 @@ public class OverflowPage implements Serializable {
             throw new DBAppException("IO Exception");
         }
     }
+
     protected String getFromMetaDataTree() throws DBAppException
     {
         try {
@@ -208,10 +272,10 @@ public class OverflowPage implements Serializable {
     public String toString()
     {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("The overflow page: " + pageName + "\n");
+        stringBuilder.append("The overflow page: ").append(pageName).append("\n");
         for(Ref ref : refs)
         {
-            stringBuilder.append(ref+" , ");
+            stringBuilder.append(ref).append(" , ");
         }
         stringBuilder.append("\n");
         if(this.nextRef == null)
@@ -222,65 +286,11 @@ public class OverflowPage implements Serializable {
         }
         catch(DBAppException e)
         {
-            System.out.println("Exception HERE");
+            e.printStackTrace();
+            System.out.println("Exception above");
         }
         return stringBuilder.toString();
 
     }
 
-    public ArrayList<Ref> getAllRefs() throws DBAppException {
-        ArrayList<Ref> refRes = new ArrayList<>();
-        refRes.addAll(refs);
-        if(nextRef != null)
-        {
-            try
-            {
-                refRes.addAll(deserialize(nextRef).getAllRefs());
-            }
-            catch(DBAppException e)
-            {
-                throw new DBAppException("Exception getting overflow page");
-            }
-        }
-        return refRes;
-    }
-    public Ref getLastRef() throws DBAppException {
-        if(nextRef!=null){
-            OverflowPage nextPage = deserialize(nextRef);
-            Ref ref = nextPage.getLastRef();
-            nextPage.serialize();
-            return ref;
-        }
-        else
-        {
-            return refs.get(refs.size()-1);
-        }
-    }
-    public Ref getMaxRefPage(int tableLength) throws DBAppException {
-        return getMaxRefPage(tableLength,refs.get(0));
-    }
-    private Ref getMaxRefPage(int tableLength, Ref ref) throws DBAppException {
-        for(int i=0; i<refs.size(); i++){
-
-            if(getIntInRefPage(ref, tableLength)<getIntInRefPage(refs.get(i), tableLength))
-            {
-                ref = refs.get(i);
-            }
-        }
-        if(nextRef == null)
-        {
-            return ref;
-        }
-        else
-        {
-            OverflowPage nextPage = deserialize(nextRef);
-            Ref ref2 = nextPage.getMaxRefPage(tableLength, ref);
-            nextPage.serialize();
-            return ref2;
-        }
-    }
-    private static int getIntInRefPage(Ref ref,int tableLength){
-        return Integer.parseInt(ref.getPage().substring(tableLength));
-    }
 }
-
