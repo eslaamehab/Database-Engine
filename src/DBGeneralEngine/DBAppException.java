@@ -2,6 +2,9 @@ package src.DBGeneralEngine;
 
 public class DBAppException extends Exception {
 
+
+    /*      Constructors     */
+
     public DBAppException() {
         super();
     }
