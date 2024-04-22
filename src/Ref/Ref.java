@@ -22,7 +22,6 @@ public class Ref extends GeneralRef implements Serializable
         this.pageNo=pageNo;
     }
 
-
     public boolean equals(Object obj) {
         Ref x= (Ref) obj;
         String firstNo = x.pageNo;
@@ -33,14 +32,14 @@ public class Ref extends GeneralRef implements Serializable
 
     public int hashCode() {
         char[] charArray = pageNo.toCharArray();
-        String res = "";
+        StringBuilder stringBuilder = new StringBuilder();
         for (int i=charArray.length-1; i>=0; i--) {
             char c = charArray[i];
             int cInt = c-'0';
             if ( cInt<0 || cInt>9 ) break;
-            res = cInt + res;
+            stringBuilder.insert(0, cInt);
         }
-        return Integer.parseInt(res);
+        return Integer.parseInt(stringBuilder.toString());
     }
 
     public void updateRef(String oldPage, String newPage) {
