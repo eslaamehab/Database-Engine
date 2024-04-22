@@ -9,8 +9,36 @@ import java.util.ArrayList;
 public class OverflowRef extends GeneralRef implements Serializable
 {
 
+    /*      Attributes     */
     private String firstPageName;
 
+
+
+    /*      Getters & Setters     */
+    public String getFirstPageName()
+    {
+        return firstPageName;
+    }
+
+    public void setFirstPageName(String firstPageName)
+    {
+        this.firstPageName = firstPageName;
+    }
+
+    public OverflowPage getFirstPage() throws DBAppException
+    {
+        return deserializeOverflowPage(firstPageName);
+    }
+
+    public void setFirstPage(OverflowPage firstPage) throws DBAppException
+    {
+        this.firstPageName= firstPage.getPageName();
+        firstPage.serialize();
+    }
+
+
+
+    /*      Methods     */
     public OverflowPage deserializeOverflowPage(String firstPageName) throws DBAppException {
 
         try {
@@ -22,39 +50,22 @@ public class OverflowRef extends GeneralRef implements Serializable
             return overflowPage;
         }
         catch(IOException e) {
-            throw new DBAppException("IO Exception in page: "+firstPageName+".class");
+            throw new DBAppException("IO Exception in page: "+firstPageName );
         }
         catch(ClassNotFoundException e) {
-            throw new DBAppException("Class Not Found Exception");
+            throw new DBAppException("Class Not Found Exception in: "+ firstPageName);
         }
     }
 
-
-    public String getFirstPageName() {
-        return firstPageName;
-    }
-
-    public void setFirstPageName(String firstPageName) {
-        this.firstPageName = firstPageName;
-    }
-
-    public OverflowPage getFirstPage() throws DBAppException {
-        OverflowPage firstPage = deserializeOverflowPage(firstPageName);
-        return firstPage;
-    }
-
-    public void setFirstPage(OverflowPage firstPage) throws DBAppException {
-        this.firstPageName= firstPage.getPageName();
-        firstPage.serialize();
-    }
-
-
-    public void insert(Ref ref) throws DBAppException{
+    public void insert(Ref ref) throws DBAppException
+    {
         OverflowPage overflowPage = deserializeOverflowPage(firstPageName);
         overflowPage.addRecord(ref);
         overflowPage.serialize();
     }
-    public void deleteRef(String pageName) throws DBAppException{
+
+    public void deleteRef(String pageName) throws DBAppException
+    {
 
         OverflowPage overflowPage = deserializeOverflowPage(firstPageName);
         overflowPage.deleteRecord(pageName);
@@ -63,7 +74,7 @@ public class OverflowRef extends GeneralRef implements Serializable
             File file = new File("data: "+ firstPageName + ".class");
             file.delete();
             firstPageName = overflowPage.getNext();
-            overflowPage = deserializeOverflowPage(firstPageName);
+            deserializeOverflowPage(firstPageName);
         }
         else {
             overflowPage.serialize();
@@ -75,7 +86,6 @@ public class OverflowRef extends GeneralRef implements Serializable
         OverflowPage overflowPage = deserializeOverflowPage(firstPageName);
         return overflowPage.getTotalSize();
     }
-
 
     public String toString()
     {
