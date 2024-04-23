@@ -1189,14 +1189,14 @@ public class Table implements Serializable {
             int lastPageMaxNum = Integer.parseInt(lastPage.substring(tableName.length()));
             boolean[] visited = new boolean[lastPageMaxNum + 1];
             TreeIndex treeIndex = treeIndexColumnName.get(strColumnName);
-            LeafNode leafNode = treeIndex.getLeftmostLeaf();
-            while (leafNode != null) {
+            APTreeLeafNode APTreeLeafNode = treeIndex.getLeftmostLeaf();
+            while (APTreeLeafNode != null) {
                 int i;
-                for (i = 0; i < leafNode.getNumberOfKeys(); i++) {
-                    GeneralRef gr = leafNode.getRecord(i);
-                    if (leafNode.getKey(i).compareTo(objValue) > 0)
+                for (i = 0; i < APTreeLeafNode.getNumberOfKeys(); i++) {
+                    GeneralRef gr = APTreeLeafNode.getRecord(i);
+                    if (APTreeLeafNode.getKey(i).compareTo(objValue) > 0)
                         break;
-                    if (leafNode.getKey(i).compareTo(objValue) == 0 && strOperator.length() == 1)
+                    if (APTreeLeafNode.getKey(i).compareTo(objValue) == 0 && strOperator.length() == 1)
                         break;
                     Set<Ref> ref = fillInRef(gr);
                     for (Ref r : ref) {
@@ -1209,9 +1209,9 @@ public class Table implements Serializable {
                     }
 
                 }
-                if (i < leafNode.getNumberOfKeys())
+                if (i < APTreeLeafNode.getNumberOfKeys())
                     break;
-                leafNode = leafNode.getNext();
+                APTreeLeafNode = APTreeLeafNode.getNext();
             }
             return res;
         }
