@@ -6,6 +6,7 @@ import java.io.*;
 import java.util.*;
 
 import src.APTree.*;
+import src.BPTree.BPTree;
 import src.Ref.Ref;
 import src.Ref.GeneralRef;
 import src.Ref.OverflowRef;
@@ -1211,7 +1212,7 @@ public class Table implements Serializable {
                 }
                 if (i < APTreeLeafNode.getNumberOfKeys())
                     break;
-                APTreeLeafNode = APTreeLeafNode.getNext();
+                APTreeLeafNode = APTreeLeafNode.getNextNodeName();
             }
             return res;
         }
