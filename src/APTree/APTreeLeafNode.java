@@ -5,7 +5,7 @@ import src.Ref.GeneralRef;
 
 public interface APTreeLeafNode<T extends Comparable<T>> {
 
-    APTreeLeafNode getNextNodeName() throws DBAppException;
+    String getNextNodeName() throws DBAppException;
     int getNumberOfKeys();
     Comparable<T> getKey(int index);
     GeneralRef getRecord(int index);
