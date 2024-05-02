@@ -50,9 +50,10 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T>  imp
      */
     public BPTreeNode<T> getChild(int index) throws DBAppException
     {
-        if (childrenName[index]==null) return null;
-        BPTreeNode<T> child=deserializeNode(childrenName[index]);
-        return child;
+        if ( childrenName[index] == null)
+            return null;
+        
+        return deserializeNode(childrenName[index]);
     }
 
 
