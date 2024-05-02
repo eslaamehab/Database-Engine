@@ -23,18 +23,24 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T>  imp
 //    private static final long serialVersionUID = -3768562665814994927L;
 
     //	private BPTreeNode<T>[] children;
-    private String[]childrenName;
+
+
+            // attributes
+
+    private final String[] childrenName;
+
+
     /**
      * create BPTreeNode given order.
-     * @param n the maximum number of keys in the nodes of the tree
+     * @param maxKeys the maximum number of keys in the nodes of the tree
      * @throws DBAppException
      */
     @SuppressWarnings("unchecked")
-    public BPTreeInnerNode(int n) throws DBAppException
+    public BPTreeInnerNode(int maxKeys) throws DBAppException
     {
-        super(n);
-        keys = new Comparable[n];
-        childrenName = new String[n+1];
+        super(maxKeys);
+        setKeys(new Comparable[maxKeys]);
+        childrenName = new String[maxKeys+1];
     }
 
     /**
