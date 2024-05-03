@@ -2,10 +2,11 @@ package src.BPTree;
 
 
 import src.DBGeneralEngine.DBAppException;
+import src.Ref.GeneralRef;
+import src.Ref.Ref;
 
 import java.io.Serializable;
-
-
+import java.util.ArrayList;
 
 
 //        import java.io.Serializable;
@@ -17,30 +18,25 @@ import java.io.Serializable;
 
 public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T>  implements Serializable
 {
-    /**
-     *
-     */
-//    private static final long serialVersionUID = -3768562665814994927L;
-
-    //	private BPTreeNode<T>[] children;
 
 
             // attributes
 
-    private final String[] childrenName;
+    // array of leafs
+    private final String[] children;
 
 
     /**
      * create BPTreeNode given order.
-     * @param maxKeys the maximum number of keys in the nodes of the tree
+     * @param n the maximum number of keys in the nodes of the tree
      * @throws DBAppException
      */
     @SuppressWarnings("unchecked")
-    public BPTreeInnerNode(int maxKeys) throws DBAppException
+    public BPTreeInnerNode(int n) throws DBAppException
     {
-        super(maxKeys);
-        setKeys(new Comparable[maxKeys]);
-        childrenName = new String[maxKeys+1];
+        super(n);
+        setKeys(new Comparable[n]);
+        children = new String[n+1];
     }
 
     /**
@@ -50,10 +46,7 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T>  imp
      */
     public BPTreeNode<T> getChild(int index) throws DBAppException
     {
-        if ( childrenName[index] == null)
-            return null;
-        
-        return deserializeNode(childrenName[index]);
+        return children[index] == null ? null : deserializeNode(children[index]);
     }
 
 
@@ -63,10 +56,10 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T>  imp
      */
     public void setChild(int index, BPTreeNode<T> child)
     {
-        if (child==null) childrenName[index]=null;
-        else	childrenName[index] = child.nodeName;
-        //child.serializeNode();//TODO can i serialize ,myself??
+        children[index] = (child == null) ? null : child.getNodeName();
     }
+
+
     /**
      * get the first child of this node.
      * @return first child node.
@@ -74,9 +67,10 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T>  imp
      */
     public BPTreeNode<T> getFirstChild() throws DBAppException
     {
-        BPTreeNode<T> child=deserializeNode(childrenName[0]);
-        return child;
+        return deserializeNode(children[0]);
     }
+
+
     /**
      * get the last child of this node
      * @return last child node.
@@ -84,92 +78,107 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T>  imp
      */
     public BPTreeNode<T> getLastChild() throws DBAppException
     {
-        BPTreeNode<T> child=deserializeNode(childrenName[numberOfKeys]);
-        return child;
+        return deserializeNode(children[getNumberOfKeys()]);
     }
+
+
     /**
      * @return the minimum keys values in InnerNode
      */
     public int minKeys()
     {
-        if(this.isRoot())
-            return 1;
-        return (order + 2) / 2 - 1;
+        return this.isRoot() ? 1 : (getOrder() + 2) / 2 - 1;
     }
+    
+    
     /**
      * insert given key in the corresponding index.
      * @param key key to be inserted
-     * @param recordReference reference which that inserted key is located
+     * @param ref reference which that inserted key is located
      * @param parent parent of that inserted node
      * @param ptr index of pointer in the parent node pointing to the current node
      * @return value to be pushed up to the parent.
      * @throws DBAppException
      */
-    public PushUp<T> insert(T key, Ref recordReference, BPTreeInnerNode<T> parent, int ptr) throws DBAppException
+    public PushUp<T> insert(T key, Ref ref, BPTreeInnerNode<T> parent, int ptr) throws DBAppException
     {
         int index = findIndex(key);
-        BPTreeNode<T> b=deserializeNode(childrenName[index]);
-        PushUp<T> pushUp = b.insert(key, recordReference, this, index); //TODO this or name of parent
+        BPTreeNode<T> bpTreeNode = deserializeNode(children[index]);
 
-        if(pushUp == null)
+        PushUp<T> pushUp = bpTreeNode.insert(key, ref, this, index);
+
+        if( pushUp == null )
         {
-            b.serializeNode();
+            bpTreeNode.serializeNode();
             return null;
         }
 
         if(this.isFull())
         {
-            BPTreeInnerNode<T> newNode = this.split(pushUp);
-            Comparable<T> newKey = newNode.getFirstKey();
-            newNode.deleteAt(0, 0);
-            newNode.serializeNode();
-            b.serializeNode();
-            return new PushUp<T>(newNode, newKey); //TODO recheck
+            BPTreeInnerNode<T> newBpTreeNode = this.split(pushUp);
+            Comparable<T> newKey = newBpTreeNode.getFirstKey();
+            newBpTreeNode.deleteAt(0, 0);
+            newBpTreeNode.serializeNode();
+            bpTreeNode.serializeNode();
+
+            return new PushUp<T>(newBpTreeNode, newKey);
         }
+
         else
         {
             index = 0;
-            while (index < numberOfKeys && getKey(index).compareTo(key) < 0)
+            while (index < getNumberOfKeys() && getKey(index).compareTo(key) < 0)
                 ++index;
             this.insertRightAt(index, pushUp.key, pushUp.newNode);
-            b.serializeNode();
+            bpTreeNode.serializeNode();
+
             return null;
         }
     }
+
+
     /**
      * split the inner node and adjust values and pointers.
      * @param pushup key to be pushed up to the parent in case of splitting.
      * @return Inner node after splitting
      * @throws DBAppException
      */
-    @SuppressWarnings("unchecked")
+
     public BPTreeInnerNode<T> split(PushUp<T> pushup) throws DBAppException
     {
-        //Serialization Comment: only called by insert; insert takes care of serializing the caller and the returned nodes
-        int keyIndex = this.findIndex((T)pushup.key);
-        int midIndex = numberOfKeys / 2 - 1;
-        if(keyIndex > midIndex)				//split nodes evenly
-            ++midIndex;
 
-        int totalKeys = numberOfKeys + 1;
-        //move keys to a new node
-        BPTreeInnerNode<T> newNode = new BPTreeInnerNode<T>(order);
+        int keyIndex = this.findIndex((T)pushup.key);
+        int midIndex = getNumberOfKeys() / 2 - 1;
+
+        // split nodes
+        if(keyIndex > midIndex){
+            ++midIndex;
+        }
+
+        int totalKeys = getNumberOfKeys() + 1;
+
+        // move keys to new node
+        BPTreeInnerNode<T> newNode = new BPTreeInnerNode<T>(getOrder());
         for (int i = midIndex; i < totalKeys - 1; ++i)
         {
             newNode.insertRightAt(i - midIndex, this.getKey(i), this.getChild(i+1));
-            numberOfKeys--;
+
+            setNumberOfKeys(getNumberOfKeys()-1);
         }
         newNode.setChild(0, this.getChild(midIndex));
 
-        //insert the new key
-//		System.out.println(midIndex);
-        if(keyIndex < totalKeys / 2)
+        // insert new key
+        if(keyIndex < totalKeys / 2){
             this.insertRightAt(keyIndex, pushup.key, pushup.newNode);
-        else
+        }
+        else{
             newNode.insertRightAt(keyIndex - midIndex, pushup.key, pushup.newNode);
+        }
 
         return newNode;
     }
+
+
     /**
      * find the correct place index of specified key in that node.
      * @param key to be looked for
@@ -177,14 +186,16 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T>  imp
      */
     public int findIndex(T key)
     {
-        for (int i = 0; i < numberOfKeys; ++i)
+        for (int i = 0; i < getNumberOfKeys(); ++i)
         {
-            int cmp = getKey(i).compareTo(key);
-            if (cmp > 0)
+            int compareKeys = getKey(i).compareTo(key);
+            if (compareKeys > 0)
                 return i;
         }
-        return numberOfKeys;
+        return getNumberOfKeys();
     }
+
+
     /**
      * insert at given index a given key
      * @param index where it inserts the key
@@ -193,15 +204,16 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T>  imp
      */
     private void insertAt(int index, Comparable<T> key) throws DBAppException
     {
-        for (int i = numberOfKeys; i > index; --i)
+        for (int i = getNumberOfKeys(); i > index; --i)
         {
             this.setKey(i, this.getKey(i - 1));
             this.setChild(i+1, this.getChild(i));
         }
         this.setKey(index, key);
-        numberOfKeys++;
-
+        setNumberOfKeys(getNumberOfKeys()+1);
     }
+
+
     /**insert key and adjust left pointer with given child.
      * @param index where key is inserted
      * @param key to be inserted in that index
@@ -214,6 +226,8 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T>  imp
         this.setChild(index+1, this.getChild(index));
         this.setChild(index, leftChild);
     }
+
+
     /**insert key and adjust right pointer with given child.
      * @param index where key is inserted
      * @param key to be inserted in that index
@@ -225,83 +239,80 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T>  imp
         insertAt(index, key);
         this.setChild(index + 1, rightChild);
     }
+
+
     /**
      * delete key and return true or false if it is deleted or not
      * @throws DBAppException
      */
-    public boolean delete(T key, BPTreeInnerNode<T> parent, int ptr) throws DBAppException //TODO parent
+    public boolean delete(T key, BPTreeInnerNode<T> parent, int ptr) throws DBAppException
     {
-        //Serialization comment: if the root; no need. otherwise; the parent serilizes this
         boolean done = false;
-        for(int i = 0; !done && i < numberOfKeys; ++i)
-            if(keys[i].compareTo(key) > 0) {
-                BPTreeNode<T> b=deserializeNode(childrenName[i]);
+
+        for(int i = 0; !done && i < getNumberOfKeys(); ++i)
+            if(getKeys()[i].compareTo(key) > 0) {
+                BPTreeNode<T> b=deserializeNode(children[i]);
                 done = b.delete(key, this, i);
                 b.serializeNode();
             }
 
         if(!done) {
-            BPTreeNode<T> b=deserializeNode(childrenName[numberOfKeys]);
-            done = b.delete(key, this, numberOfKeys);
-            b.serializeNode();
+            BPTreeNode<T> bpTreeNode = deserializeNode(children[getNumberOfKeys()]);
+            done = bpTreeNode.delete(key, this, getNumberOfKeys());
+            bpTreeNode.serializeNode();
         }
-        if(numberOfKeys < this.minKeys())
+
+        if(getNumberOfKeys() < this.minKeys())
         {
             if(isRoot())
             {
-                BPTreeNode<T> fstChild = this.getFirstChild();
-                fstChild.setRoot(true);
-                fstChild.serializeNode();
+                BPTreeNode<T> firstChildNode = this.getFirstChild();
+                firstChildNode.setRoot(true);
+                firstChildNode.serializeNode();
                 this.setRoot(false);
                 return done;
             }
-            //1.try to borrow
+
             if(borrow(parent, ptr)) {
-//				parent.serializeNode();
                 return done;
             }
-            //2.merge
             merge(parent, ptr);
-//		    parent.serializeNode();
         }
         return done;
     }
 
-    // delete Ref not entire key
-    public boolean delete(T key, BPTreeInnerNode<T> parent, int ptr, String page_name) throws DBAppException //TODO parent
+
+    public boolean delete(T key, BPTreeInnerNode<T> parent, int ptr, String page_name) throws DBAppException
     {
-//		Serialization comment: if the root; no need. otherwise; the parent serilizes this
         boolean done = false;
-        for(int i = 0; !done && i < numberOfKeys; ++i)
-            if(keys[i].compareTo(key) > 0) {
-                BPTreeNode<T> b=deserializeNode(childrenName[i]);
-                done = b.delete(key, this, i,page_name);
-                b.serializeNode();
+
+        for(int i = 0; !done && i < getNumberOfKeys(); ++i)
+            if(getKeys()[i].compareTo(key) > 0) {
+                BPTreeNode<T> bpTreeNode = deserializeNode(children[i]);
+                done = bpTreeNode.delete(key, this, i,page_name);
+                bpTreeNode.serializeNode();
             }
 
         if(!done) {
-            BPTreeNode<T> b=deserializeNode(childrenName[numberOfKeys]);
-            done = b.delete(key, this, numberOfKeys,page_name);
-            b.serializeNode();
+            BPTreeNode<T> bpTreeNode = deserializeNode(children[getNumberOfKeys()]);
+            done = bpTreeNode.delete(key, this, getNumberOfKeys(),page_name);
+            bpTreeNode.serializeNode();
         }
-        if(numberOfKeys < this.minKeys())
+
+        if(getNumberOfKeys() < this.minKeys())
         {
             if(this.isRoot())
             {
-                BPTreeNode<T> nd = this.getFirstChild();
-                nd.setRoot(true);//this.getFirstChild().setRoot(true);
-                nd.serializeNode();
+                BPTreeNode<T> firstChildNode = this.getFirstChild();
+                firstChildNode.setRoot(true);
+                firstChildNode.serializeNode();
                 this.setRoot(false);
                 return done;
             }
-            //1.try to borrow
             if(borrow(parent, ptr)) {
-//				parent.serializeNode();
                 return done;
             }
-            //2.merge
             merge(parent, ptr);
-//		    parent.serializeNode();
         }
         return done;
     }
@@ -320,27 +331,27 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T>  imp
         if(ptr > 0)
         {
             BPTreeInnerNode<T> leftSibling = (BPTreeInnerNode<T>) parent.getChild(ptr-1);
-            if(leftSibling.numberOfKeys > leftSibling.minKeys())
+            if(leftSibling.getNumberOfKeys() > leftSibling.minKeys())
             {
-                BPTreeNode leftSiblingLastChild = leftSibling.getLastChild();
+                BPTreeNode<T> leftSiblingLastChild = leftSibling.getLastChild();
                 this.insertLeftAt(0, parent.getKey(ptr-1), leftSiblingLastChild);
                 leftSiblingLastChild.serializeNode();
                 parent.deleteAt(ptr-1);
                 parent.insertRightAt(ptr-1, leftSibling.getLastKey(), this);
-                leftSibling.deleteAt(leftSibling.numberOfKeys - 1);
+                leftSibling.deleteAt(leftSibling.getNumberOfKeys() - 1);
                 leftSibling.serializeNode();
                 return true;
             }
         }
 
         //check right sibling
-        if(ptr < parent.numberOfKeys)
+        if(ptr < parent.getNumberOfKeys())
         {
             BPTreeInnerNode<T> rightSibling = (BPTreeInnerNode<T>) parent.getChild(ptr+1);
-            if(rightSibling.numberOfKeys > rightSibling.minKeys())
+            if(rightSibling.getNumberOfKeys() > rightSibling.minKeys())
             {
-                BPTreeNode rightSiblingFirstChild = rightSibling.getFirstChild();
-                this.insertRightAt(this.numberOfKeys, parent.getKey(ptr), rightSiblingFirstChild);
+                BPTreeNode<T> rightSiblingFirstChild = rightSibling.getFirstChild();
+                this.insertRightAt(this.getNumberOfKeys(), parent.getKey(ptr), rightSiblingFirstChild);
                 rightSiblingFirstChild.serializeNode();
                 parent.deleteAt(ptr);
                 parent.insertRightAt(ptr, rightSibling.getFirstKey(), rightSibling);
@@ -351,6 +362,8 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T>  imp
         }
         return false;
     }
+
+
     /**
      * try to merge with left or right sibling in case of overflow
      * @param parent of the current node
@@ -361,7 +374,7 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T>  imp
     {
         if(ptr > 0)
         {
-            //merge with left
+            //merge with left sibling
             BPTreeInnerNode<T> leftSibling = (BPTreeInnerNode<T>) parent.getChild(ptr-1);
             leftSibling.merge(parent.getKey(ptr-1), this);
             parent.deleteAt(ptr-1);
@@ -369,13 +382,14 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T>  imp
         }
         else
         {
-            //merge with right
+            //merge with right sibling
             BPTreeInnerNode<T> rightSibling = (BPTreeInnerNode<T>) parent.getChild(ptr+1);
             this.merge(parent.getKey(ptr), rightSibling);
             parent.deleteAt(ptr);
             rightSibling.serializeNode();
         }
     }
+
 
     /**
      * merge the current node with the passed node and pulling the passed key from the parent
@@ -386,47 +400,52 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T>  imp
      */
     public void merge(Comparable<T> parentKey, BPTreeInnerNode<T> foreignNode) throws DBAppException
     {
-        this.insertRightAt(numberOfKeys, parentKey, foreignNode.getFirstChild());
-        for(int i = 0; i < foreignNode.numberOfKeys; ++i)
-            this.insertRightAt(numberOfKeys, foreignNode.getKey(i), foreignNode.getChild(i+1));
+        this.insertRightAt(getNumberOfKeys(), parentKey, foreignNode.getFirstChild());
+        for(int i = 0; i < foreignNode.getNumberOfKeys(); ++i)
+            this.insertRightAt(getNumberOfKeys(), foreignNode.getKey(i), foreignNode.getChild(i+1));
     }
+
 
     /**
      * delete the key at the specified index with the option to delete the right or left pointer
      * @param keyIndex the index whose key will be deleted
-     * @param childPtr 0 for deleting the left pointer and 1 for deleting the right pointer
+     * @param ptr 0 for deleting the left pointer and 1 for deleting the right pointer
      */
-    public void deleteAt(int keyIndex, int childPtr)	//0 for left and 1 for right
+    public void deleteAt(int keyIndex, int ptr)
     {
-        for(int i = keyIndex; i < numberOfKeys - 1; ++i)
+        for(int i = keyIndex; i < getNumberOfKeys() - 1; ++i)
         {
-            keys[i] = keys[i+1];
-            childrenName[i+childPtr] = childrenName[i+childPtr+1];
+            getKeys()[i] = getKeys()[i + 1];
+            children[i+ptr] = children[i+ptr+1];
         }
-        if(childPtr == 0)
-            childrenName[numberOfKeys-1] = childrenName[numberOfKeys];
-        numberOfKeys--;
+
+        if(ptr == 0)
+        {
+            children[getNumberOfKeys() -1] = children[getNumberOfKeys()];
+        }
+        setNumberOfKeys(getNumberOfKeys()-1);
     }
+
 
     /**
      * searches for the record reference of the specified key
      * @throws DBAppException
      */
     @Override
-    public GeneralReference search(T key) throws DBAppException
+    public GeneralRef search(T key) throws DBAppException
     {
-        BPTreeNode <T> b=deserializeNode(childrenName[findIndex(key)]);
-        GeneralReference x= b.search(key);
-//		b.serializeNode();	//TODO: Can I remove this ?
-        return x;
+        BPTreeNode <T> bpTreeNode = deserializeNode(children[findIndex(key)]);
+        return bpTreeNode.search(key);
     }
+
+
     public Ref searchForInsertion(T key,int tableLength)throws DBAppException
     {
-        BPTreeNode <T> b=deserializeNode(childrenName[findIndex(key)]);
-        Ref x= b.searchForInsertion(key,tableLength);
-//		b.serializeNode();		//TODO: Can I remove this ?
-        return x;
+        BPTreeNode <T> bpTreeNode = deserializeNode(children[findIndex(key)]);
+        return bpTreeNode.searchForInsertion(key,tableLength);
     }
+
+
     /**
      * delete the key at the given index and deleting its right child
      */
@@ -436,30 +455,21 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T>  imp
     }
 
 
-    public ArrayList<GeneralReference> searchMTE(T key) throws DBAppException{
-        BPTreeNode <T> b=deserializeNode(childrenName[findIndex(key)]);
-        ArrayList<GeneralReference> res =  b.searchMTE(key);
-        return res;
+    public ArrayList<GeneralRef> searchMTE(T key) throws DBAppException{
+        BPTreeNode <T> bpTreeNode = deserializeNode(children[findIndex(key)]);
+        return bpTreeNode.searchMTE(key);
     }
-    public ArrayList<GeneralReference> searchMT(T key) throws DBAppException{
-        BPTreeNode <T> b=deserializeNode(childrenName[findIndex(key)]);
-        ArrayList<GeneralReference> res =  b.searchMT(key);
-        return res;
+
+
+    public ArrayList<GeneralRef> searchMT(T key) throws DBAppException{
+        BPTreeNode <T> b=deserializeNode(children[findIndex(key)]);
+        return b.searchMT(key);
     }
-    //	public ArrayList<GeneralReference> searchlTE(T key) throws DBAppException{
-//		BPTreeNode <T> b=deserializeNode(childrenName[0]);
-//		ArrayList<GeneralReference> res =  b.searchlTE(key);
-//		return res;
-//	}
-//	public ArrayList<GeneralReference> searchlT(T key) throws DBAppException{
-//		BPTreeNode <T> b=deserializeNode(childrenName[0]);
-//		ArrayList<GeneralReference> res =  b.searchlT(key);
-//		return res;
-//	}
+
+    
     public BPTreeLeafNode searchForUpdateRef(T key) throws DBAppException{
-        BPTreeNode <T> b=deserializeNode(childrenName[findIndex(key)]);
-        BPTreeLeafNode x= b.searchForUpdateRef(key);
-        return x;
+        BPTreeNode <T> b=deserializeNode(children[findIndex(key)]);
+        return b.searchForUpdateRef(key);
     }
 
 }
