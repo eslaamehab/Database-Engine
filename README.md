@@ -11,22 +11,20 @@ DBMS supports relational database schemes.
 
 The supported functionalities :-
 
-1	creating tables.
+    1- Creating tables.
 
-2	inserting tuples.
+    2- Inserting Tuples
 
-3	deleting tuples.
+    3- Deleting tuples.
 
-4	searching in tables linearly.
+    4- Searching in tables linearly.
 
-5	creating a B+ tree index.
+    5- Creating a B+ tree index.
 
-6	searching using B+ tree index.
+    6- Searching using B+ tree index.
 
-7	creating an R tree index.
+    7- Creating an R tree index.
 
-8	searching using an R tree index.
+    8- Searching using an R tree index.
 
-9	simple select queries.
-
-
+    9- Simple select queries.
