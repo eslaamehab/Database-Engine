@@ -13,7 +13,9 @@ DBMS uses pages and serialization for disk operations.
 <br />
 DBMS supports relational database schemes.
 
+
 <br />
+
 The supported functionalities :-
 
 <br />
