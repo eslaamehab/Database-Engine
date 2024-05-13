@@ -1,6 +1,5 @@
 package src.DBGeneralEngine;
 
-import src.APTree.APTreeLeafNode;
 import src.Ref.GeneralRef;
 import src.Ref.Ref;
 
@@ -12,7 +11,7 @@ public interface TreeIndex<T extends Comparable> {
     public boolean delete(T key) throws DBAppException;
     public boolean delete(T key, String PageName) throws DBAppException;
     public void insert(T key, Ref recordReference) throws DBAppException;
-    public APTreeLeafNode getLeftmostLeaf() throws DBAppException;
+    public LeafNode getLeftmostLeaf() throws DBAppException;
     public ArrayList<GeneralRef> searchMTE(T key) throws DBAppException;
     public ArrayList<GeneralRef> searchMT(T key) throws DBAppException;
     public void updateRef(String oldPage, String newPage, T key) throws DBAppException;
