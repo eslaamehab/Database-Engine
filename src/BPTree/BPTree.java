@@ -85,7 +85,7 @@ public class BPTree<T extends Comparable<T>> implements Serializable, TreeIndex<
      * @param ref the reference of the record associated with the key
      */
     public void insert(T key, Ref ref) throws DBAppException {
-        PushUp<T> pushUp = root.insert(key, ref, null, -1);
+        PushUpBPTree<T> pushUp = root.insert(key, ref, null, -1);
 
         if (pushUp != null) {
             BPTreeInnerNode<T> newRoot = new BPTreeInnerNode<T>(order);
