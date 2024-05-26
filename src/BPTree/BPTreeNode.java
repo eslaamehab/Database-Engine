@@ -17,16 +17,15 @@ import java.util.ArrayList;
 import java.util.Vector;
 
 
+/**
+ * This is an abstract class that collects the common functionalities of the inner and leaf nodes
+ */
 public abstract class BPTreeNode<T extends Comparable<T>> implements Serializable{
 
+
     /**
-     * Abstract class that collects the common functionalities of the inner and leaf nodes
+     * Attributes
      */
-
-
-    // attributes
-
-
     private int index;
     private static int nextIndex = 0;
     private Comparable<T>[] keys;
@@ -36,22 +35,34 @@ public abstract class BPTreeNode<T extends Comparable<T>> implements Serializabl
     private String nodeName;
 
 
-
-    public abstract PushUp<T> insert(T key, Ref ref, BPTreeInnerNode<T> parent, int i) throws DBAppException;
+    /**
+     * Abstract methods
+     */
+    public abstract PushUpBPTree<T> insert(T key, Ref ref, BPTreeInnerNode<T> parent, int i) throws DBAppException;
     public abstract GeneralRef search(T key) throws DBAppException;
     public abstract ArrayList<GeneralRef> searchMT(T key)throws DBAppException;
     public abstract ArrayList<GeneralRef> searchMTE(T key)throws DBAppException;
     public abstract Ref searchForInsertion(T key,int tableLength)throws DBAppException;
-
-
+    /**
+     * delete a key from the B+ tree recursively
+     * @param key the key to be deleted from the B+ tree
+     * @param parent the parent of the current node
+     * @param i the index of the parent pointer that points to this node
+     * @return true if this node was successfully deleted and false otherwise
+     */
     public abstract boolean delete(T key, BPTreeInnerNode<T> parent, int i) throws DBAppException;
     public abstract boolean delete(T key, BPTreeInnerNode<T> parent, int i,String pageName) throws DBAppException;
-
     public abstract BPTreeLeafNode searchForUpdateRef(T key) throws DBAppException;
+    /**
+     * @return the minimum number of keys this node can hold
+     */
+    public abstract int minKeys();
 
 
-    // constructor
 
+    /**
+     * Constructor
+     */
     public BPTreeNode(int order) throws DBAppException
     {
         this.order = order;
@@ -61,8 +72,9 @@ public abstract class BPTreeNode<T extends Comparable<T>> implements Serializabl
     }
 
 
-    // getters and setters
-
+    /**
+     * Getters & Setters
+     */
     public Comparable<T>[] getKeys() {
         return keys;
     }
@@ -110,6 +122,70 @@ public abstract class BPTreeNode<T extends Comparable<T>> implements Serializabl
     public void setNumberOfKeys(int numberOfKeys) {
         this.numberOfKeys = numberOfKeys;
     }
+
+    /**
+     * @return the last key in this node
+     */
+    public Comparable<T> getLastKey()
+    {
+        return keys[numberOfKeys-1];
+    }
+
+    /**
+     * @return the first key in this node
+     */
+    public Comparable<T> getFirstKey()
+    {
+        return keys[0];
+    }
+
+    /**
+     * set this node to be a root or unset it if it is a root
+     * @param isRoot the setting of the node
+     */
+    public void setRoot(boolean isRoot)
+    {
+        this.isRoot = isRoot;
+    }
+
+    /**
+     * find the key at the specified index
+     * @param index the index at which the key is located
+     * @return the key which is located at the specified index
+     */
+    public Comparable<T> getKey(int index)
+    {
+        return keys[index];
+    }
+
+    /**
+     * sets the value of the key at the specified index
+     * @param index the index of the key to be set
+     * @param key the new value for the key
+     */
+    public void setKey(int index, Comparable<T> key)
+    {
+        keys[index] = key;
+    }
+
+
+    /**
+     * @return a boolean indicating whether this node is the root of the B+ tree
+     */
+    public boolean isRoot()
+    {
+        return isRoot;
+    }
+
+    /**
+     * @return a boolean whether this node is full or not
+     */
+    public boolean isFull()
+    {
+        return numberOfKeys == order;
+    }
+
+
 
     public static Vector readFile(String path) throws DBAppException
     {
@@ -162,87 +238,8 @@ public abstract class BPTreeNode<T extends Comparable<T>> implements Serializabl
     }
 
 
-
-
     /**
-     * @return a boolean indicating whether this node is the root of the B+ tree
-     */
-    public boolean isRoot()
-    {
-        return isRoot;
-    }
-
-    /**
-     * set this node to be a root or unset it if it is a root
-     * @param isRoot the setting of the node
-     */
-    public void setRoot(boolean isRoot)
-    {
-        this.isRoot = isRoot;
-    }
-
-    /**
-     * find the key at the specified index
-     * @param index the index at which the key is located
-     * @return the key which is located at the specified index
-     */
-    public Comparable<T> getKey(int index)
-    {
-        return keys[index];
-    }
-
-    /**
-     * sets the value of the key at the specified index
-     * @param index the index of the key to be set
-     * @param key the new value for the key
-     */
-    public void setKey(int index, Comparable<T> key)
-    {
-        keys[index] = key;
-    }
-
-    /**
-     * @return a boolean whether this node is full or not
-     */
-    public boolean isFull()
-    {
-        return numberOfKeys == order;
-    }
-
-    /**
-     * @return the last key in this node
-     */
-    public Comparable<T> getLastKey()
-    {
-        return keys[numberOfKeys-1];
-    }
-
-    /**
-     * @return the first key in this node
-     */
-    public Comparable<T> getFirstKey()
-    {
-        return keys[0];
-    }
-
-    /**
-     * @return the minimum number of keys this node can hold
-     */
-    public abstract int minKeys();
-
-
-    /**
-     * delete a key from the B+ tree recursively
-     * @param key the key to be deleted from the B+ tree
-     * @param parent the parent of the current node
-     * @param i the index of the parent pointer that points to this node
-     * @return true if this node was successfully deleted and false otherwise
-     * @throws DBAppException
-     */
-
-
-    /**
-     * A string representation for the node
+     * Returns a string representation of the node
      */
     public String toString()
     {
@@ -264,8 +261,6 @@ public abstract class BPTreeNode<T extends Comparable<T>> implements Serializabl
     }
 
 
-
-
     public void serializeNode() throws DBAppException
     {
         try
@@ -280,8 +275,8 @@ public abstract class BPTreeNode<T extends Comparable<T>> implements Serializabl
             e.printStackTrace();
             throw new DBAppException("IO Exception writing to disk: " + this.nodeName );
         }
-
     }
+
     public BPTreeNode<T> deserializeNode(String name) throws DBAppException {
         try {
             FileInputStream fileInputStream = new FileInputStream("data: "+ name + ".class");
@@ -299,7 +294,6 @@ public abstract class BPTreeNode<T extends Comparable<T>> implements Serializabl
             e.printStackTrace();
             throw new DBAppException("Class Not Found Exception above");
         }
-
     }
 
 }
