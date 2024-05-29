@@ -7,15 +7,18 @@ import static java.util.Objects.hash;
 
 public class DBAppTest implements Serializable {
 
-    /*      Attributes     */
+    /**
+     * Attributes
+     */
     private final Vector<Object> inserts;
     private static long nextId = 0L;
     private final long id;
     private final String tableName;
 
 
-
-    /*      Constructor     */
+    /**
+     * Constructor
+     */
     public DBAppTest(String tableName) throws IOException {
         this.tableName = tableName;
         inserts = new Vector<>();
@@ -25,51 +28,44 @@ public class DBAppTest implements Serializable {
     }
 
 
-    /*      Methods     */
+    /**
+     * Getters & Setters
+     */
+    public Vector<Object> getInserts() {
+        return inserts;
+    }
 
-    public void saveNextId() throws IOException {
+    public static void setNextId(long nextId) {
+        DBAppTest.nextId = nextId;
+    }
 
-//        Add the path below
-        File file = new File("Data: " + tableName+" Next ID");
-        if (!file.exists())
-            file.delete();
-        file.createNewFile();
-        ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(file));
-        stream.writeObject(nextId);
-        stream.close();
+    public String getTableName() {
+        return tableName;
     }
 
     public long getNextId() {
         long id = 0;
         try {
 //            Add the path below
-            File file = new File("Data: " + tableName+" Next ID");
+            File file = new File("Data: " + tableName + " Next ID");
             if (!file.exists())
                 return 0;
 
 //            Add the path below
-            FileInputStream fileInputStream = new FileInputStream("Data/ " + tableName+" Next ID");
+            FileInputStream fileInputStream = new FileInputStream("Data/ " + tableName + " Next ID");
             ObjectInputStream in = new ObjectInputStream(fileInputStream);
-             id = (long) in.readObject();
+            id = (long) in.readObject();
 
             in.close();
             fileInputStream.close();
-        }
-
-        catch (IOException ex) {
+        } catch (IOException ex) {
             System.out.println("IOException");
-//            ex.printStackTrace();
-        }
-
-        catch (ClassNotFoundException ex) {
+            ex.printStackTrace();
+        } catch (ClassNotFoundException ex) {
             System.out.println("ClassNotFoundException");
-//            ex.printStackTrace();
+            ex.printStackTrace();
         }
         return id;
-    }
-
-    public boolean hasId(long id) {
-        return this.id == id;
     }
 
     public long getId() {
@@ -79,6 +75,28 @@ public class DBAppTest implements Serializable {
     public Object get(int id) {
         return inserts.get(id);
     }
+
+
+    /**
+     * Methods
+     */
+    public void saveNextId() throws IOException {
+
+//        Add the path below
+        File file = new File("Data: " + tableName + " Next ID");
+        if (!file.exists())
+            file.delete();
+        file.createNewFile();
+        ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(file));
+        stream.writeObject(nextId);
+        stream.close();
+    }
+
+
+    public boolean hasId(long id) {
+        return this.id == id;
+    }
+
 
     public void add(int id, Object obj) {
         inserts.insertElementAt(obj, id);
