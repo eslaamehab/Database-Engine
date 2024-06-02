@@ -1,6 +1,5 @@
 package src.DBGeneralEngine;
 
-import src.APTree.Tuple;
 import src.Ref.GeneralRef;
 import src.Ref.OverflowRef;
 
@@ -13,20 +12,26 @@ import java.util.Vector;
 
 public class Page implements Serializable {
 
-    /*      Attributes     */
+    /**
+     * Attributes
+     */
     private Vector vector = new Vector();
     private Vector<Tuple> tuples;
     private String pageName;
 
 
-    /*      Constructor     */
+    /**
+     * Constructor
+     */
     public Page(String pageName) {
         tuples = new Vector<Tuple>();
         this.pageName = pageName;
     }
 
 
-    /*      Getters & Setters     */
+    /**
+     * Getters & Setters
+     */
     public Vector getVector() {
         return vector;
     }
@@ -52,7 +57,9 @@ public class Page implements Serializable {
     }
 
 
-    /*      Methods    */
+    /**
+     * Rest of the functions
+     */
     public int size() {
         return tuples.size();
     }
@@ -177,9 +184,13 @@ public class Page implements Serializable {
         }
     }
 
-    public void deleteInPageForRef(Vector<String[]> metaOfTable, int orgPos, String clusteringKey,
-                                   Hashtable<String, TreeIndex> colNameTreeIndex, Hashtable<String, Object> hashtableColumnNameValue,
-                                   ArrayList<String> allIndices, boolean isCluster) throws DBAppException {
+    public void deleteInPageForRef(Vector<String[]> metaOfTable,
+                                   int orgPos,
+                                   String clusteringKey,
+                                   Hashtable<String, TreeIndex> colNameTreeIndex,
+                                   Hashtable<String, Object> hashtableColumnNameValue,
+                                   ArrayList<String> allIndices,
+                                   boolean isCluster) throws DBAppException {
         int n = 0;
         int lastOccurrence = tuples.size();
         if (isCluster) {
@@ -220,8 +231,10 @@ public class Page implements Serializable {
         }
     }
 
-    public void deleteInPageWithBinarySearch(Hashtable<String, Object> hashtableColumnNameValue, Vector<String[]> metaOfTable,
-                                             int orgPos, String clusteringKey) {
+    public void deleteInPageWithBinarySearch(Hashtable<String, Object> hashtableColumnNameValue,
+                                             Vector<String[]> metaOfTable,
+                                             int orgPos,
+                                             String clusteringKey) {
 
         int n = binarySearchLastOccurrence((Comparable) hashtableColumnNameValue.get(clusteringKey), orgPos);
         ArrayList<String> arrayList = new ArrayList<>();
@@ -262,4 +275,5 @@ public class Page implements Serializable {
         }
         return stringBuilder + "\n";
     }
+
 }
