@@ -1,27 +1,36 @@
 package src.DBGeneralEngine;
 
-import src.APTree.CustomPolygon;
-
 import java.awt.*;
 
 public class SQLTerm {
 
+    /**
+     * Attributes
+     */
     private String strTableName;
     private String strColumnName;
     private String strOperator;
     private Object objValue;
 
+
+    /**
+     * Constructor
+     */
     public SQLTerm(String strTableName, String strColumnName, String strOperator, Object objValue) {
         this.strTableName = strTableName;
         this.strColumnName = strColumnName;
         this.strOperator = strOperator;
 
-        if(objValue instanceof Polygon){
-            objValue=new CustomPolygon((Polygon)objValue);
+        if (objValue instanceof Polygon) {
+            objValue = new CustomPolygon((Polygon) objValue);
         }
         this.objValue = objValue;
     }
 
+
+    /**
+     * Getters & Setters
+     */
     public String getStrTableName() {
         return strTableName;
     }
@@ -54,7 +63,9 @@ public class SQLTerm {
         this.objValue = objValue;
     }
 
+
     public static void main(String[] args) {
 
     }
+
 }
