@@ -5,6 +5,9 @@ import java.io.Serializable;
 public class Ref extends GeneralRef implements Serializable
 {
 
+    /**
+     * Attributes
+     */
     private String pageNo;
 
     public Ref(String pageNo)
@@ -12,6 +15,17 @@ public class Ref extends GeneralRef implements Serializable
         this.pageNo = pageNo;
     }
 
+
+    /**
+     * Getters & Setters
+     */
+    public String getPageNo() {
+        return pageNo;
+    }
+
+    public void setPageNo(String pageNo) {
+        this.pageNo = pageNo;
+    }
 
     public String getPage()
     {
@@ -21,6 +35,8 @@ public class Ref extends GeneralRef implements Serializable
     public void setPage(String pageNo) {
         this.pageNo=pageNo;
     }
+
+
 
     public boolean equals(Object obj) {
         Ref x= (Ref) obj;
@@ -51,9 +67,5 @@ public class Ref extends GeneralRef implements Serializable
         return false;
     }
 
-    @Override
-    public boolean isRecord() {
-        return false;
-    }
 }
 
