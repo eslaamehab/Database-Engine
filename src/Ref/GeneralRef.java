@@ -6,8 +6,11 @@ import java.util.ArrayList;
 
 public abstract class GeneralRef {
 
+    /**
+     * Abstract Methods
+     */
     public abstract boolean isOverflow();
-    public abstract boolean isRecord();
+
     public abstract void updateRef(String oldPage, String newPage) throws DBAppException;
 
     public ArrayList<Ref> getAllRef() throws DBAppException
