@@ -1,7 +1,7 @@
 package src.Ref;
 
 import src.DBGeneralEngine.DBAppException;
-import src.APTree.OverflowPage;
+import src.DBGeneralEngine.OverflowPage;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -9,12 +9,15 @@ import java.util.ArrayList;
 public class OverflowRef extends GeneralRef implements Serializable
 {
 
-    /*      Attributes     */
+    /**
+     * Attributes
+     */
     private String firstPageName;
 
 
-
-    /*      Getters & Setters     */
+    /**
+     * Getters & Setters
+     */
     public String getFirstPageName()
     {
         return firstPageName;
@@ -36,9 +39,28 @@ public class OverflowRef extends GeneralRef implements Serializable
         firstPage.serialize();
     }
 
+    public ArrayList<Ref> getAllRef() throws DBAppException
+    {
+        return deserializeOverflowPage(firstPageName).getAllRefs();
+    }
+    public Ref getLastRef() throws DBAppException {
+        OverflowPage overflowPage = deserializeOverflowPage(firstPageName);
+        Ref lastRef = overflowPage.getLastRef();
+        overflowPage.serialize();
+        return lastRef;
+    }
+
+    public int getTotalSize() throws DBAppException
+    {
+        OverflowPage overflowPage = deserializeOverflowPage(firstPageName);
+        return overflowPage.getTotalSize();
+    }
 
 
-    /*      Methods     */
+
+    /**
+     * Functions
+     */
     public OverflowPage deserializeOverflowPage(String firstPageName) throws DBAppException {
 
         try {
@@ -81,11 +103,17 @@ public class OverflowRef extends GeneralRef implements Serializable
         }
     }
 
-    public int getTotalSize() throws DBAppException
-    {
-        OverflowPage overflowPage = deserializeOverflowPage(firstPageName);
-        return overflowPage.getTotalSize();
+    public boolean isOverflow() {
+        return true;
     }
+
+    @Override
+    public void updateRef(String oldPage, String newPage) throws DBAppException {
+        OverflowPage overflowPage = deserializeOverflowPage(firstPageName);
+        overflowPage.updateRef(oldPage, newPage);
+        overflowPage.serialize();
+    }
+
 
     public String toString()
     {
@@ -99,29 +127,6 @@ public class OverflowRef extends GeneralRef implements Serializable
             System.out.println("Error deserializing first page");
         }
         return stringBuilder.toString();
-    }
-    public boolean isOverflow() {
-        return true;
-    }
-    public boolean isRecord() {
-        return false;
-    }
-    @Override
-    public void updateRef(String oldPage, String newPage) throws DBAppException {
-        OverflowPage overflowPage = deserializeOverflowPage(firstPageName);
-        overflowPage.updateRef(oldPage, newPage);
-        overflowPage.serialize();
-    }
-
-    public ArrayList<Ref> getAllRef() throws DBAppException
-    {
-        return deserializeOverflowPage(firstPageName).getAllRefs();
-    }
-    public Ref getLastRef() throws DBAppException {
-        OverflowPage overflowPage = deserializeOverflowPage(firstPageName);
-        Ref lastRef = overflowPage.getLastRef();
-        overflowPage.serialize();
-        return lastRef;
     }
 
 }
