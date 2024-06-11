@@ -13,6 +13,11 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 
+/**
+ * BPTree class implements a B+ Tree structure.
+ *
+ * @param <T> The type of elements maintained by this tree, which must be comparable.
+ */
 public class BPTree<T extends Comparable<T>> implements Serializable, TreeIndex<T> {
 
 
