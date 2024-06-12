@@ -424,6 +424,13 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T> impl
     }
 
 
+    /**
+     * Searches for all references with keys greater than the given key.
+     *
+     * @param key The key to search for.
+     * @return An ArrayList of GeneralRef objects representing the references found.
+     * @throws DBAppException If an error occurs during the search process.
+     */
     public ArrayList<GeneralRef> searchMT(T key) throws DBAppException {
         BPTreeNode<T> b = deserializeNode(children[findIndex(key)]);
         return b.searchMT(key);
@@ -432,8 +439,6 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T> impl
 
     /**
      * Searches for the leaf node that should be updated for the given key.
-     * It finds the appropriate child node based on the key and deserialize it
-     * Then delegates the search operation to  that deserialized node
      *
      * @param key The key to search for.
      * @return The BPTreeLeafNode that contains the reference to be updated.
