@@ -430,6 +430,15 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T> impl
     }
 
 
+    /**
+     * Searches for the leaf node that should be updated for the given key.
+     * It finds the appropriate child node based on the key and deserialize it
+     * Then delegates the search operation to  that deserialized node
+     *
+     * @param key The key to search for.
+     * @return The BPTreeLeafNode that contains the reference to be updated.
+     * @throws DBAppException If an error occurs during the search process.
+     */
     public BPTreeLeafNode searchForUpdateRef(T key) throws DBAppException {
         BPTreeNode<T> b = deserializeNode(children[findIndex(key)]);
         return b.searchForUpdateRef(key);
