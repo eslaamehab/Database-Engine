@@ -418,6 +418,13 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T> impl
     }
 
 
+    /**
+     * Searches for all references with keys greater than or equal to the given key.
+     *
+     * @param key The key to search for.
+     * @return An ArrayList of GeneralRef objects representing the references found.
+     * @throws DBAppException If an error occurs during the search process.
+     */
     public ArrayList<GeneralRef> searchMTE(T key) throws DBAppException {
         BPTreeNode<T> bpTreeNode = deserializeNode(children[findIndex(key)]);
         return bpTreeNode.searchMTE(key);
