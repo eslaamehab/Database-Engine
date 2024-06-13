@@ -411,7 +411,9 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T> impl
 
 
     /**
-     * delete the key at the given index
+     * Deletes the child reference at the given index.
+     *
+     * @param index The index of the child reference to delete.
      */
     public void deleteAt(int index) {
         deleteAt(index, 1);
