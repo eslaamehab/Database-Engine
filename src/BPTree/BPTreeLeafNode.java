@@ -17,6 +17,8 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
 
     /**
      * Attributes
+     *
+     * Define each attribute
      */
     private final GeneralRef[] records;
     private String nextNodeName;
