@@ -42,6 +42,7 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
 
     /**
      * Getters & Setters
+     * go through functions
      *
      */
     public GeneralRef[] getRecords() {
