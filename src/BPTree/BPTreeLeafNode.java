@@ -12,13 +12,20 @@ import java.io.Serializable;
 import java.util.ArrayList;
 
 
+/**
+ * BPTreeLeafNode class represents a leaf node in a B+ Tree.
+ *
+ * @param <T> The type of elements maintained by this tree, which must be comparable.
+ */
 public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> implements Serializable, LeafNode<T> {
 
 
     /**
      * Attributes
-     *
-     * Define each attribute
+     * <p>
+     * records      -> Array to hold the reference object of the records in the leaf node.
+     * nextNodeName -> The name of the next leaf node in the sequence. Used to maintain the linked list structure of leaf nodes.
+     * pagesToPrint -> A static list to hold overflow references for printing or debugging purposes.
      */
     private final GeneralRef[] records;
     private String nextNodeName;
@@ -27,7 +34,7 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
 
     /**
      * Constructor
-     *
+     * <p>
      * Initializes a new BPTreeLeafNode with the specified capacity.
      * It calls the constructor of the superclass (BPTreeNode) to set the node's capacity
      * Then it creates new arrays to store the node's keys and records.
@@ -45,7 +52,6 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
 
     /**
      * Getters & Setters
-     *
      */
     public GeneralRef[] getRecords() {
         return records;
@@ -66,24 +72,23 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
      * @throws DBAppException if an error occurs during the deserialization process.
      */
     public BPTreeLeafNode getNextNode() throws DBAppException {
-        return (nextNodeName != null) ? ((BPTreeLeafNode)deserializeNode(nextNodeName)) : null;
+        return (nextNodeName != null) ? ((BPTreeLeafNode) deserializeNode(nextNodeName)) : null;
     }
 
     /**
-     *Gets the name of the next BPTreeLeafNode in the linked list.
+     * Gets the name of the next BPTreeLeafNode in the linked list.
      *
      * @return The name of the next BPTreeLeafNode, or null if this is the last node.
      * @throws DBAppException if an error occurs while accessing the `nextNodeName` field.
      */
     @Override
-    public String getNextNodeName() throws DBAppException
-    {
+    public String getNextNodeName() throws DBAppException {
         return nextNodeName;
     }
 
     /**
      * Sets the name of the next BPTreeLeafNode in the linked list.
-     *
+     * <p>
      * This method sets the `nextNodeName` field to the provided String value.
      * This represents the name of the next BPTreeLeafNode in the linked list of leaf nodes.
      *
@@ -95,7 +100,7 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
 
     /**
      * Sets the next BPTreeLeafNode in the linked list.
-     *
+     * <p>
      * This method sets the `nextNodeName` field to the name of the provided BPTreeLeafNode.
      * If the `nextNodeName` is already null, it sets the `nextNodeName` to null.
      * Indicating that this is the last node in the linked list.
@@ -112,8 +117,7 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
      * @param i The index of the record to retrieve.
      * @return the GeneralReference of the queried index.
      */
-    public GeneralRef getRecord(int i)
-    {
+    public GeneralRef getRecord(int i) {
         return records[i];
     }
 
@@ -121,11 +125,10 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
     /**
      * Sets the record at the given index with the given reference
      *
-     * @param i the index of the record to update/set
+     * @param i   the index of the record to update/set
      * @param ref the GeneralReference to store at the given index
      */
-    public void setRecord(int i, GeneralRef ref)
-    {
+    public void setRecord(int i, GeneralRef ref) {
         records[i] = ref;
     }
 
@@ -133,8 +136,7 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
     /**
      * @return the reference of the first record
      */
-    public GeneralRef getFirstRecord()
-    {
+    public GeneralRef getFirstRecord() {
         return records[0];
     }
 
@@ -142,40 +144,60 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
     /**
      * @return the reference of the last record
      */
-    public GeneralRef getLastRecord()
-    {
-        return records[getNumberOfKeys() -1];
+    public GeneralRef getLastRecord() {
+        return records[getNumberOfKeys() - 1];
+    }
+
+
+    /**
+     * Gets the reference from a GeneralRef object.
+     * If the GeneralRef is an instance of Ref, it is returned directly.
+     * If it is an instance of OverflowRef, it retrieves the maximum reference page.
+     *
+     * @param generalRef  The GeneralRef object to get the reference from.
+     * @param tableLength The length of the table.
+     * @return The Ref object retrieved from the GeneralRef.
+     * @throws DBAppException If an error occurs during the process.
+     */
+    public Ref getRef(GeneralRef generalRef, int tableLength) throws DBAppException {
+        if (generalRef instanceof Ref) {
+            return (Ref) generalRef;
+        } else {
+            OverflowRef overflowRef = (OverflowRef) generalRef;
+            String pageName = overflowRef.getFirstPageName();
+            OverflowPage overflowPage = overflowRef.deserializeOverflowPage(pageName);
+
+            return overflowPage.getMaxRefPage(tableLength);
+        }
     }
 
 
     /**
      * Finds the minimum number of keys the current node could hold.
      */
-    public int minKeys()
-    {
+    public int minKeys() {
         return this.isRoot() ? 1 : (getOrder() + 1) / 2;
     }
 
 
     /**
      * Inserts a new key-record pair into the B+-tree leaf node.
-     *
+     * <p>
      * This method handles the insertion of the given new key and its corresponding record
      * reference into the leaf node of the B+-tree.
      *
-     * @param key The new key to be inserted.
+     * @param key             The new key to be inserted.
      * @param recordReference The record reference associated with the new key.
-     * @param parent The parent node of this leaf node.
-     * @param ptr The index of this leaf node in the parent node.
+     * @param parent          The parent node of this leaf node.
+     * @param ptr             The index of this leaf node in the parent node.
      * @return A new PushUpBPTree object if the node was split, or null if the
-     *         insertion was successful without requiring a split.
+     * insertion was successful without requiring a split.
      * @throws DBAppException If an error occurs during the insertion process.
      */
     public PushUpBPTree<T> insert(T key,
                                   Ref recordReference,
                                   BPTreeInnerNode<T> parent,
-                                  int ptr) throws DBAppException
-    {
+                                  int ptr) throws DBAppException {
 
         int index = 0;
 
@@ -185,35 +207,28 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
 
         // If the node is full, it splits the node into two,
         // and Returns a new PushUpBPTree object with the new middle key and the two child nodes.
-        if(this.isFull())
-        {
+        if (this.isFull()) {
             BPTreeNode<T> newNode = this.split(key, recordReference);
             Comparable<T> newKey = newNode.getFirstKey();
             newNode.serializeNode();
             return new PushUpBPTree<T>(newNode, newKey);
-        }
-
-        else if (index< getNumberOfKeys() && getKey(index).compareTo(key)==0) {
+        } else if (index < getNumberOfKeys() && getKey(index).compareTo(key) == 0) {
             GeneralRef ref = records[index];
             if (ref.isOverflow()) {
 
-                OverflowRef overflowRef=(OverflowRef)ref;
+                OverflowRef overflowRef = (OverflowRef) ref;
                 overflowRef.insert(recordReference);
 
-            }
-            else {
+            } else {
                 OverflowRef overflowRef = new OverflowRef();
                 OverflowPage overflowPage = new OverflowPage(getOrder());
                 overflowRef.setFirstPage(overflowPage);
-                overflowRef.insert((Ref)ref);
+                overflowRef.insert((Ref) ref);
                 overflowRef.insert(recordReference);
-                records[index]=overflowRef;
+                records[index] = overflowRef;
             }
             return null;
-        }
-
-        else
-        {
+        } else {
             this.insertAt(index, key, recordReference);
             return null;
         }
@@ -223,52 +238,48 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
     /**
      * Inserts a new key-record pair at the given index in the leaf node.
      *
-     * @param index The index at which the new key-record pair should be inserted.
-     * @param key The new key to be inserted.
+     * @param index      The index at which the new key-record pair should be inserted.
+     * @param key        The new key to be inserted.
      * @param generalRef The new record reference to be inserted.
      */
-    public void insertAt(int index, Comparable<T> key, GeneralRef generalRef)
-    {
+    public void insertAt(int index, Comparable<T> key, GeneralRef generalRef) {
         // Shift all existing keys and records to the right to insert the new key-record pair.
-        for (int i = getNumberOfKeys() - 1; i >= index; --i)
-        {
+        for (int i = getNumberOfKeys() - 1; i >= index; --i) {
             this.setKey(i + 1, getKey(i));
             this.setRecord(i + 1, getRecord(i));
         }
 
         this.setKey(index, key);
         this.setRecord(index, generalRef);
-        setNumberOfKeys( getNumberOfKeys() + 1 );
+        setNumberOfKeys(getNumberOfKeys() + 1);
     }
 
 
     /**
      * Splits the current leaf node and returns the newly created leaf node.
      *
-     * @param key The new key to be inserted.
+     * @param key        The new key to be inserted.
      * @param generalRef The new record reference to be inserted.
      * @return The newly created leaf node.
      * @throws DBAppException If an error occurs during the split operation.
      */
-    public BPTreeNode<T> split(T key, GeneralRef generalRef) throws DBAppException
-    {
+    public BPTreeNode<T> split(T key, GeneralRef generalRef) throws DBAppException {
         // Find the index at which the new key should be inserted
         int keyIndex = this.findIndex(key);
         // get the middle index, which is the split point
         int midIndex = getNumberOfKeys() / 2;
         int totalKeys = getNumberOfKeys() + 1;
 
-        if((getNumberOfKeys() & 1) == 1 && keyIndex > midIndex)
+        if ((getNumberOfKeys() & 1) == 1 && keyIndex > midIndex)
             ++midIndex;
 
         BPTreeLeafNode<T> newNode = new BPTreeLeafNode<T>(getOrder());
-        for (int i = midIndex; i < totalKeys - 1; ++i)
-        {
+        for (int i = midIndex; i < totalKeys - 1; ++i) {
             newNode.insertAt(i - midIndex, this.getKey(i), this.getRecord(i));
-            setNumberOfKeys( getNumberOfKeys() - 1 );
+            setNumberOfKeys(getNumberOfKeys() - 1);
         }
 
-        if(keyIndex < totalKeys / 2)
+        if (keyIndex < totalKeys / 2)
             this.insertAt(keyIndex, key, generalRef);
         else
             newNode.insertAt(keyIndex - midIndex, key, generalRef);
@@ -288,10 +299,8 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
      * @param key the key to be checked for its location
      * @return the index at which the key should be located
      */
-    public int findIndex(T key)
-    {
-        for (int i = 0; i < getNumberOfKeys(); ++i)
-        {
+    public int findIndex(T key) {
+        for (int i = 0; i < getNumberOfKeys(); ++i) {
             int cmp = getKey(i).compareTo(key);
             if (cmp > 0)
                 return i;
@@ -307,11 +316,10 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
      * @return The GeneralRef of the record associated with the given key, or null if the key does not exist.
      */
     @Override
-    public GeneralRef search(T key)
-    {
+    public GeneralRef search(T key) {
         // Iterate through the keys in the node
-        for(int i = 0; i < getNumberOfKeys(); ++i)
-            if(this.getKey(i).compareTo(key) == 0)
+        for (int i = 0; i < getNumberOfKeys(); ++i)
+            if (this.getKey(i).compareTo(key) == 0)
                 return this.getRecord(i);
         return null;
     }
@@ -320,47 +328,132 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
     /**
      * Searches for the corresponding reference for inserting the given key.
      *
-     * @param key The key to be inserted.
+     * @param key         The key to be inserted.
      * @param tableLength The length of the table.
      * @return The Ref object of the record where the key should be inserted, or null if it does not exist.
      * @throws DBAppException If an error occurs during the search process.
      */
-    public Ref searchForInsertion(T key,int tableLength)throws DBAppException
-    {
+    public Ref searchForInsertion(T key, int tableLength) throws DBAppException {
         // Iterate through the keys to find the insertion point
-        int i=0;
-        for(; i < getNumberOfKeys(); i++){
-            if(this.getKey(i).compareTo(key) >= 0)
-                return this.getRef((this.getRecord(i)),tableLength);
+        int i = 0;
+        for (; i < getNumberOfKeys(); i++) {
+            if (this.getKey(i).compareTo(key) >= 0)
+                return this.getRef((this.getRecord(i)), tableLength);
         }
         // If the key is greater than all existing keys, return the reference of the last key
-        if( i>0 ){
-            return this.getRef(this.getRecord(i-1),tableLength);
+        if (i > 0) {
+            return this.getRef(this.getRecord(i - 1), tableLength);
         }
         return null;
     }
 
 
     /**
-     * Gets the reference from a GeneralRef object.
-     * If the GeneralRef is an instance of Ref, it is returned directly.
-     * If it is an instance of OverflowRef, it retrieves the maximum reference page.
+     * Searches for the given key in the current node and returns a list of matching references.
      *
-     * @param generalRef The GeneralRef object to get the reference from.
-     * @param tableLength The length of the table.
-     * @return The Ref object retrieved from the GeneralRef.
-     * @throws DBAppException If an error occurs during the process.
+     * @param key The key to search for.
+     * @return A list of references that match the given key.
+     * @throws DBAppException If an error occurs during the search process.
      */
-    public Ref getRef(GeneralRef generalRef, int tableLength) throws DBAppException {
-        if(generalRef instanceof Ref){
-            return (Ref)generalRef;
-        }else{
-            OverflowRef overflowRef = (OverflowRef) generalRef;
-            String pageName = overflowRef.getFirstPageName();
-            OverflowPage overflowPage = overflowRef.deserializeOverflowPage(pageName);
+    public ArrayList<GeneralRef> searchMTE(T key) throws DBAppException {
+        ArrayList<GeneralRef> refResult = new ArrayList<>();
+        searchMTE(key, refResult);
+        return refResult;
+    }
 
-            return overflowPage.getMaxRefPage(tableLength);
+
+    /**
+     * Searches for the given key in the current node and its subtree
+     * Then adds the matching references to the given referenceResult list.
+     *
+     * @param key       The key to search for.
+     * @param refResult The list of references to add matching keys to.
+     * @throws DBAppException If an error occurs during the search process.
+     */
+    public void searchMTE(T key, ArrayList<GeneralRef> refResult) throws DBAppException {
+        // Iterate through the keys in the node
+        int i = 0;
+        for (; i < getNumberOfKeys(); ++i) {
+            if (this.getKey(i).compareTo(key) >= 0)
+                refResult.add(this.getRecord(i));
         }
+        // If there is a next node, recursively search it for matching keys
+        if (nextNodeName != null) {
+            BPTreeLeafNode nxt = (BPTreeLeafNode) deserializeNode(nextNodeName);
+            nxt.searchMTE(key, refResult);
+        }
+
+    }
+
+
+    /**
+     * Searches for the given key in this node and returns a list of matching references.
+     *
+     * @param key The key to search for.
+     * @return A list of references that match the given key.
+     * @throws DBAppException If an error occurs during the search process.
+     */
+    public ArrayList<GeneralRef> searchMT(T key) throws DBAppException {
+        ArrayList<GeneralRef> refResult = new ArrayList<>();
+        searchMT(key, refResult);
+        return refResult;
+    }
+
+
+    /**
+     * Searches for the given key in this node and adds matching references to the provided result list.
+     *
+     * @param key       The key to search for.
+     * @param refResult The list of references to add matching keys to.
+     * @throws DBAppException If an error occurs during the search process.
+     */
+    public void searchMT(T key, ArrayList<GeneralRef> refResult) throws DBAppException {
+        // Iterate through the keys in the node
+        for (int i = 0; i < getNumberOfKeys(); ++i)
+            if (this.getKey(i).compareTo(key) > 0)
+                refResult.add(this.getRecord(i));
+        // If there is a next node, recursively search it for matching keys and add them to the result list
+        if (nextNodeName != null) {
+            BPTreeLeafNode<T> nxt = (BPTreeLeafNode<T>) deserializeNode(nextNodeName);
+            nxt.searchMT(key, refResult);
+        }
+    }
+
+
+    /**
+     * Searches for the leaf node that should be updated for the given key.
+     * Since this is a leaf node, it returns itself.
+     *
+     * @param key The key to search for.
+     * @return This BPTreeLeafNode, as leaf nodes contain the references to be updated.
+     */
+    @Override
+    public BPTreeLeafNode searchForUpdateRef(T key) {
+        return this;
+    }
+
+
+    /**
+     * Updates the page reference of a record in the current node with the given key.
+     *
+     * @param oldPage The current page reference of the record to update.
+     * @param newPage The new page reference to update the record with.
+     * @param key     The key of the record to update.
+     * @throws DBAppException If an error occurs during the update process.
+     */
+    public void updateRef(String oldPage, String newPage, T key) throws DBAppException {
+        GeneralRef generalRef;
+        // Iterate through the records in this node, to find the record with the matching key
+        for (int i = 0; i < getNumberOfKeys(); ++i)
+            if (this.getKey(i).compareTo(key) == 0) {
+                // Get the record and update its page reference
+                generalRef = getRecord(i);
+                generalRef.updateRef(oldPage, newPage);
+                if (generalRef instanceof Ref) {
+                    this.serializeNode();
+                }
+                return;
+            }
     }
 
 
@@ -383,7 +476,7 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
                     parent.setKey(ptr - 1, this.getFirstKey());
                 }
 
-                // If the node is not the root and it has fewer keys than the minimum required, handle underflow
+                // If the node is not the root, and it has fewer keys than the minimum required, handle underflow
                 if (!this.isRoot() && getNumberOfKeys() < this.minKeys()) {
                     // Attempt to borrow a key from a sibling node
                     if (borrow(parent, ptr))
@@ -449,32 +542,18 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
         return false;
     }
 
-    /**
-     * Searches for the leaf node that should be updated for the given key.
-     * Since this is a leaf node, it returns itself.
-     *
-     * @param key The key to search for.
-     * @return This BPTreeLeafNode, as leaf nodes contain the references to be updated.
-     */
-    @Override
-    public BPTreeLeafNode searchForUpdateRef(T key) {
-        return this;
-    }
-
 
     /**
      * Deletes the key-record at the given index fromm the B+ tre.
      *
      * @param index the index of the key-record to be deleted
      */
-    public void deleteAt(int index)
-    {
-        for(int i = index; i < getNumberOfKeys() - 1; ++i)
-        {
-            getKeys()[i] = getKeys()[i+1];
-            records[i] = records[i+1];
+    public void deleteAt(int index) {
+        for (int i = index; i < getNumberOfKeys() - 1; ++i) {
+            getKeys()[i] = getKeys()[i + 1];
+            records[i] = records[i + 1];
         }
-        setNumberOfKeys( getNumberOfKeys() - 1 );
+        setNumberOfKeys(getNumberOfKeys() - 1);
     }
 
 
@@ -482,18 +561,15 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
      * Borrows a key from a sibling node (either left or right).
      *
      * @param parent the parent of the current node
-     * @param ptr the index of the parent pointer that points to this node
+     * @param ptr    the index of the parent pointer that points to this node
      * @return true if the borrow is done successfully or false otherwise
      * @throws DBAppException If an error occurs during the borrowing process.
      */
-    public boolean borrow(BPTreeInnerNode<T> parent, int ptr) throws DBAppException
-    {
+    public boolean borrow(BPTreeInnerNode<T> parent, int ptr) throws DBAppException {
         // Check left side for enough keys to borrow
-        if(ptr > 0)
-        {
-            BPTreeLeafNode<T> leftSibling = (BPTreeLeafNode<T>) parent.getChild(ptr-1);
-            if(leftSibling.getNumberOfKeys() > leftSibling.minKeys())
-            {
+        if (ptr > 0) {
+            BPTreeLeafNode<T> leftSibling = (BPTreeLeafNode<T>) parent.getChild(ptr - 1);
+            if (leftSibling.getNumberOfKeys() > leftSibling.minKeys()) {
                 // Borrow a key and update the nodes
                 this.insertAt(0, leftSibling.getLastKey(), leftSibling.getLastRecord());
                 leftSibling.deleteAt(leftSibling.getNumberOfKeys() - 1);
@@ -504,11 +580,9 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
         }
 
         // Check right side for enough keys to borrow
-        if(ptr < parent.getNumberOfKeys())
-        {
-            BPTreeLeafNode<T> rightSibling = (BPTreeLeafNode<T>) parent.getChild(ptr+1);
-            if(rightSibling.getNumberOfKeys() > rightSibling.minKeys())
-            {
+        if (ptr < parent.getNumberOfKeys()) {
+            BPTreeLeafNode<T> rightSibling = (BPTreeLeafNode<T>) parent.getChild(ptr + 1);
+            if (rightSibling.getNumberOfKeys() > rightSibling.minKeys()) {
                 // Borrow a key and update the nodes
                 this.insertAt(getNumberOfKeys(), rightSibling.getFirstKey(), rightSibling.getFirstRecord());
                 rightSibling.deleteAt(0);
@@ -525,23 +599,20 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
      * Merges the current node with its sibling node (either left or right)
      *
      * @param parent the parent of the current node
-     * @param ptr the index of the parent pointer that points to this node
+     * @param ptr    the index of the parent pointer that points to this node
      * @throws DBAppException If an error occurs during the merging process.
      */
-    public void merge(BPTreeInnerNode<T> parent, int ptr) throws DBAppException
-    {
+    public void merge(BPTreeInnerNode<T> parent, int ptr) throws DBAppException {
         // If node is on the left side, merge with the left sibling
-        if(ptr > 0)
-        {
-            BPTreeLeafNode<T> leftSibling = (BPTreeLeafNode<T>) parent.getChild(ptr-1);
+        if (ptr > 0) {
+            BPTreeLeafNode<T> leftSibling = (BPTreeLeafNode<T>) parent.getChild(ptr - 1);
             leftSibling.merge(this);
-            parent.deleteAt(ptr-1);
+            parent.deleteAt(ptr - 1);
             leftSibling.serializeNode();
         }
         // node is on the right side, hence merge with right sibling
-        else
-        {
-            BPTreeLeafNode<T> rightSibling = (BPTreeLeafNode<T>) parent.getChild(ptr+1);
+        else {
+            BPTreeLeafNode<T> rightSibling = (BPTreeLeafNode<T>) parent.getChild(ptr + 1);
             this.merge(rightSibling);
             parent.deleteAt(ptr);
             rightSibling.serializeNode();
@@ -556,10 +627,9 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
      * @param foreignNode the node to be merged with the current node
      * @throws DBAppException If an error occurs during the merging process.
      */
-    public void merge(BPTreeLeafNode<T> foreignNode) throws DBAppException
-    {
+    public void merge(BPTreeLeafNode<T> foreignNode) throws DBAppException {
         // Insert all the keys and records from the foreign node into this node
-        for(int i = 0; i < foreignNode.getNumberOfKeys(); ++i)
+        for (int i = 0; i < foreignNode.getNumberOfKeys(); ++i)
             this.insertAt(getNumberOfKeys(), foreignNode.getKey(i), foreignNode.getRecord(i));
 
         // Update the next node name in current node to point to the same node as the foreign node
@@ -573,27 +643,22 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
      *
      * @return A string representation of this node, in the format "(index) [key1, key2, ...]"
      */
-    public String toString()
-    {
+    public String toString() {
         StringBuilder str = new StringBuilder("(" + getIndex() + ")");
 
         str.append("[");
 
-        for (int i = 0; i < getOrder(); i++)
-        {
+        for (int i = 0; i < getOrder(); i++) {
             String key = " ";
-            if(i < getNumberOfKeys()) {
+            if (i < getNumberOfKeys()) {
                 key = getKeys()[i].toString();
 
-                if(records[i] instanceof Ref)
-                {
+                if (records[i] instanceof Ref) {
                     key += "," + records[i];
-                }
-                else
-                {
-                    key += ","+((OverflowRef)records[i]).getFirstPageName();
+                } else {
+                    key += "," + ((OverflowRef) records[i]).getFirstPageName();
 
-                    if ( pagesToPrint == null )
+                    if (pagesToPrint == null)
                         pagesToPrint = new ArrayList<>();
 
                     pagesToPrint.add((OverflowRef) records[i]);
@@ -601,107 +666,11 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
 
             }
             str.append(key);
-            if(i < getOrder() - 1)
+            if (i < getOrder() - 1)
                 str.append("|");
         }
         str.append("]");
         return str.toString();
-    }
-
-
-    /**
-     * Searches for the given key in the current node and returns a list of matching references.
-     *
-     * @param key The key to search for.
-     * @return A list of references that match the given key.
-     * @throws DBAppException If an error occurs during the search process.
-     */
-    public ArrayList<GeneralRef> searchMTE(T key) throws DBAppException{
-        ArrayList<GeneralRef> refResult = new ArrayList<>();
-        searchMTE(key,refResult);
-        return refResult;
-    }
-
-
-    /**
-     * Searches for the given key in the current node and its subtree
-     * Then adds the matching references to the given referenceResult list.
-     *
-     * @param key The key to search for.
-     * @param refResult The list of references to add matching keys to.
-     * @throws DBAppException If an error occurs during the search process.
-     */
-    public void searchMTE(T key,ArrayList<GeneralRef> refResult)throws DBAppException{
-        // Iterate through the keys in the node
-        int i = 0;
-        for(; i < getNumberOfKeys(); ++i) {
-            if(this.getKey(i).compareTo(key) >= 0)
-                refResult.add(this.getRecord(i));
-        }
-        // If there is a next node, recursively search it for matching keys
-        if ( nextNodeName != null){
-            BPTreeLeafNode nxt = (BPTreeLeafNode)deserializeNode(nextNodeName);
-            nxt.searchMTE(key,refResult);
-        }
-
-    }
-
-
-    /**
-     * Searches for the given key in this node and returns a list of matching references.
-     *
-     * @param key The key to search for.
-     * @return A list of references that match the given key.
-     * @throws DBAppException If an error occurs during the search process.
-     */
-    public ArrayList<GeneralRef> searchMT(T key)throws DBAppException{
-        ArrayList<GeneralRef> refResult = new ArrayList<>();
-        searchMT(key,refResult);
-        return refResult;
-    }
-
-
-    /**
-     * Searches for the given key in this node and adds matching references to the provided result list.
-     *
-     * @param key The key to search for.
-     * @param refResult The list of references to add matching keys to.
-     * @throws DBAppException If an error occurs during the search process.
-     */
-    public void searchMT(T key, ArrayList<GeneralRef> refResult) throws DBAppException{
-        // Iterate through the keys in the node
-        for(int i = 0; i < getNumberOfKeys(); ++i)
-            if(this.getKey(i).compareTo(key) > 0)
-                refResult.add(this.getRecord(i));
-        // If there is a next node, recursively search it for matching keys and add them to the result list
-        if (nextNodeName !=null) {
-            BPTreeLeafNode<T> nxt = (BPTreeLeafNode<T>)deserializeNode(nextNodeName);
-            nxt.searchMT(key,refResult);
-        }
-    }
-
-
-    /**
-     * Updates the page reference of a record in the current node with the given key.
-     *
-     * @param oldPage The current page reference of the record to update.
-     * @param newPage The new page reference to update the record with.
-     * @param key The key of the record to update.
-     * @throws DBAppException If an error occurs during the update process.
-     */
-    public void updateRef(String oldPage,String newPage,T key) throws DBAppException{
-        GeneralRef generalRef;
-        // Iterate through the records in this node, to find the record with the matching key
-        for(int i = 0; i < getNumberOfKeys(); ++i)
-            if(this.getKey(i).compareTo(key) == 0) {
-                // Get the record and update its page reference
-                generalRef = getRecord(i);
-                generalRef.updateRef(oldPage, newPage);
-                if (generalRef instanceof Ref) {
-                    this.serializeNode();
-                }
-                return;
-            }
     }
 
 }
