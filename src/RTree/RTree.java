@@ -11,11 +11,21 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Queue;
 
+
+/**
+ * The `RTree` class is an implementation of the R-Tree data structure, a spatial index that is used to efficiently
+ * Store and query data objects with spatial properties, such as two-dimensional geometric shapes or regions.
+ *
+ * @param <CustomPolygon> the type of the custom polygon objects stored in the R-Tree, which must implement the `Comparable` interface.
+ */
 public class RTree<CustomPolygon extends Comparable<CustomPolygon>> implements Serializable, TreeIndex<CustomPolygon> {
 
 
     /**
-     attributes
+     * Attributes
+     * <p>
+     * order ->     the maximum number of keys (child nodes or data objects) that can be stored in each internal or leaf node of the R-Tree.
+     * root ->      the root node of the R-Tree, which can be either an internal node or a leaf node.
      */
 
     private final int order;
@@ -24,12 +34,14 @@ public class RTree<CustomPolygon extends Comparable<CustomPolygon>> implements S
 
     /**
      * Constructor
-     * Creates an empty R tree
-     * @param order the maximum number of keys in the nodes of the tree
+     * Initializes an empty R tree with the given order
+     * It creates a new `RTreeLeafNode` instance and sets it as the root of the tree. The root node is marked as the root of the tree.
+     *
+     * @param order the maximum number of keys in the nodes that can be stored in each internal or leaf node of the R-Tree.
+     * @throws DBAppException if the provided order is less than 3 or not a positive integer.
      */
     public RTree(int order) throws DBAppException
     {
-
         this.order = order;
         root = new RTreeLeafNode<>(this.order);
         root.setRoot(true);
@@ -52,6 +64,33 @@ public class RTree<CustomPolygon extends Comparable<CustomPolygon>> implements S
     }
 
 
+    /**
+     * Retrieves the leftmost leaf node in the R-Tree.
+     * This method is useful for operations like range queries or iteration over the data objects in the R-Tree.
+     *
+     * @return the leftmost leaf node in the R-Tree.
+     * @throws DBAppException if an error occurs during the traversal, such as the R-Tree being empty.
+     */
+    public RTreeLeafNode getLeftmostLeaf() throws DBAppException {
+        RTreeNode<CustomPolygon> currentNode = root;
+
+        while(!(currentNode instanceof RTreeLeafNode)) {
+            RTreeInnerNode rTreeInnerNode = (RTreeInnerNode) currentNode;
+            currentNode = rTreeInnerNode.getFirstChild();
+        }
+
+        return (RTreeLeafNode) currentNode;
+    }
+
+    /**
+     * Updates the reference for a given data object in the R-Tree.
+     *
+     * @param oldPage the old page reference to be updated.
+     * @param newPage the new page reference to be associated with the data object.
+     * @param key the data object (represented by a `CustomPolygon`) whose reference is to be updated.
+     * @throws DBAppException if an error occurs during the update operation,
+     * Such as the data object not being found in the R-Tree or an error serializing the modified leaf node.
+     */
     public void updateRef(String oldPage, String newPage, CustomPolygon key) throws DBAppException{
 
         RTreeLeafNode leaf = searchForUpdateRef(key);
@@ -60,16 +99,59 @@ public class RTree<CustomPolygon extends Comparable<CustomPolygon>> implements S
         leaf.serializeNode();
     }
 
-
+    /**
+     * Searches the R-Tree for the leaf node containing the given data object.
+     *
+     * @param key the data object (CustomPolygon) to search for.
+     * @return the leaf node that contains the data object.
+     * @throws DBAppException if the data object is not found in the R-Tree.
+     */
     public RTreeLeafNode searchForUpdateRef(CustomPolygon key) throws DBAppException{
         return root.searchForUpdateRef(key);
     }
 
+    /**
+     * Searches the R-Tree for the appropriate leaf node to insert a new data object.
+     *
+     * @param key         the data object (CustomPolygon) to insert.
+     * @param tableLength the maximum number of entries allowed in a leaf node.
+     * @return the reference to the appropriate leaf node where the new data object should be inserted.
+     * @throws DBAppException if an error occurs during the search.
+     */
+    public Ref searchForInsertion(CustomPolygon key,int tableLength) throws DBAppException {
+        return root.searchForInsertion(key, tableLength);
+    }
 
     /**
-     * Inserts the specified key associated with the given record in the R tree
-     * @param key the key to be inserted
-     * @param ref the reference of the record associated with the key
+     * Performs a "Multi-Tuple Exact" search on the R-Tree.
+     *
+     * @param key the data object (CustomPolygon) to search for.
+     * @return an `ArrayList<GeneralRef>` containing the references to the matching data objects.
+     * @throws DBAppException if an error occurs during the search.
+     */
+    @Override
+    public ArrayList<GeneralRef> searchMTE(CustomPolygon key) throws DBAppException {
+        return root.searchMTE(key);
+    }
+
+    /**
+     * Performs a "Multi-Tuple" search on the R-Tree.
+     *
+     * @param key the data object (CustomPolygon) to search for.
+     * @return an `ArrayList<GeneralRef>` containing the references to the matching data objects.
+     * @throws DBAppException if an error occurs during the search.
+     */
+    @Override
+    public ArrayList<GeneralRef> searchMT(CustomPolygon key) throws DBAppException {
+        return root.searchMT(key);
+    }
+
+    /**
+     * Inserts the given key of a new data object (CustomPolygon) associated with the given record reference in the R-Tree.
+     *
+     * @param key the key of the new data object to be inserted.
+     * @param ref the reference of the record associated with the key to be inserted.
+     * @throws DBAppException if an error occurs during insertion.
      */
     public void insert(CustomPolygon key, Ref ref) throws DBAppException
     {
@@ -87,22 +169,24 @@ public class RTree<CustomPolygon extends Comparable<CustomPolygon>> implements S
         }
     }
 
-
     /**
-     * Looks up for the record that is associated with the specified key
-     * @param key the key to find its record
-     * @return the reference of the record associated with this key
+     * Looks up for the record that is associated with the given key
+     *
+     * @param key the key (CustomPolygon) to search for its record
+     * @return The `GeneralRef` object that corresponds to the given key, or null if the key is not found in the R-Tree.
+     * @throws DBAppException If an error occurs during the search operation.
      */
     public GeneralRef search(CustomPolygon key) throws DBAppException
     {
         return root.search(key);
     }
 
-
     /**
-     * Delete a key and its associated record from the tree.
-     * @param key the key to be deleted
-     * @return a boolean to indicate whether the key is successfully deleted or it was not in the tree
+     * Deletes the data object associated with the given `CustomPolygon` key from the R-Tree.
+     *
+     * @param key the key (CustomPolygon) of the data object to be deleted
+     * @return `true` if the deletion was successful, `false` otherwise.
+     * @throws DBAppException If an error occurs during the deletion operation.
      */
     public boolean delete(CustomPolygon key) throws DBAppException
     {
@@ -113,21 +197,31 @@ public class RTree<CustomPolygon extends Comparable<CustomPolygon>> implements S
         return done;
     }
 
-
     /**
-     * Deletes a single Ref
+     * Deletes the single data object associated with the given (CustomPolygon) key and `pageName` from the R-Tree.
+     *
      * @param key the key to be deleted
-     * @return a boolean to indicate whether the key is successfully deleted
+     * @param pageName The name of the page where the data object is stored.
+     * @return `true` if the deletion was successful, `false` otherwise.
+     * @throws DBAppException If an error occurs during the deletion operation.
      */
-    public boolean delete(CustomPolygon key, String Page_name) throws DBAppException{
-        boolean done = root.delete(key, null, -1,Page_name);
+    public boolean delete(CustomPolygon key, String pageName) throws DBAppException{
+        boolean done = root.delete(key, null, -1,pageName);
 
         while(root instanceof RTreeInnerNode && !root.isRoot())
             root = ((RTreeInnerNode<CustomPolygon>) root).getFirstChild();
         return done;
     }
 
-
+    /**
+     * Provides a string representation of the R-Tree data structure for debugging and visualization of the R-Tree data structure.
+     * Where the output format is :-
+     * Each node is represented on a new line, with leaf nodes indicated by an arrow (->) and inner nodes enclosed in curly braces {}.
+     * The contents of each node (e.g., index values) are printed, separated by commas.
+     * After the tree representation, a section is included that lists any overflow references, with each reference numbered and its contents printed.
+     *
+     * @return a string representation of the R-Tree
+     */
     public String toString()
     {
 
@@ -184,36 +278,6 @@ public class RTree<CustomPolygon extends Comparable<CustomPolygon>> implements S
             stringBuilder.append(print.get(i).toString());
         }
         return stringBuilder.toString();
-    }
-
-
-
-    public Ref searchForInsertion(CustomPolygon key,int tableLength) throws DBAppException {
-        return root.searchForInsertion(key, tableLength);
-    }
-
-
-    public RTreeLeafNode getLeftmostLeaf() throws DBAppException {
-        RTreeNode<CustomPolygon> currentNode = root;
-
-        while(!(currentNode instanceof RTreeLeafNode)) {
-            RTreeInnerNode rTreeInnerNode = (RTreeInnerNode) currentNode;
-            currentNode = rTreeInnerNode.getFirstChild();
-        }
-
-        return (RTreeLeafNode) currentNode;
-    }
-
-
-    @Override
-    public ArrayList<GeneralRef> searchMTE(CustomPolygon key) throws DBAppException {
-        return root.searchMTE(key);
-    }
-
-
-    @Override
-    public ArrayList<GeneralRef> searchMT(CustomPolygon key) throws DBAppException {
-        return root.searchMT(key);
     }
 
 }
