@@ -173,6 +173,8 @@ public class RTreeInnerNode<CustomPolygon extends Comparable<CustomPolygon>> ext
         return getNumberOfKeys();
     }
 
+    // below searches here
+
 
     /**
      * Inserts at the given index the given key
