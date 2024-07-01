@@ -7,18 +7,30 @@ import src.Ref.Ref;
 import java.io.Serializable;
 import java.util.ArrayList;
 
+/**
+ * The RTreeInnerNode class represents an internal node in the R-Tree.
+ * It is responsible for managing the child nodes of the R-Tree.
+ * Inner nodes store the minimum bounding rectangles (MBRs) of their child nodes and pointers to those child nodes.
+ * They are used to guide the search process through the R-Tree hierarchy.
+ *
+ * @param <CustomPolygon> the type of custom polygon objects stored in the R-Tree
+ */
 public class RTreeInnerNode<CustomPolygon extends Comparable<CustomPolygon>> extends RTreeNode<CustomPolygon>  implements Serializable {
 
     /**
      * Attributes
+     *
+     * children     -> An array of child node indices, which acts as a lookup table to access them.
      */
     private final String[] children;
 
 
     /**
      * Constructor
-     * Creates RTreeNode
-     * @param maxKeys the maximum number of keys in the nodes of the tree
+     * Creates a new RTreeInnerNode with the specified maximum number of keys.
+     *
+     * @param maxKeys the maximum number of keys (and child nodes) that can be stored in this inner node
+     * @throws DBAppException if there is an issue creating the inner node
      */
     @SuppressWarnings("unchecked")
     public RTreeInnerNode(int maxKeys) throws DBAppException {
