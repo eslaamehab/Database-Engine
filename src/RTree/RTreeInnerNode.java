@@ -15,11 +15,11 @@ import java.util.ArrayList;
  *
  * @param <CustomPolygon> the type of custom polygon objects stored in the R-Tree
  */
-public class RTreeInnerNode<CustomPolygon extends Comparable<CustomPolygon>> extends RTreeNode<CustomPolygon>  implements Serializable {
+public class RTreeInnerNode<CustomPolygon extends Comparable<CustomPolygon>> extends RTreeNode<CustomPolygon> implements Serializable {
 
     /**
      * Attributes
-     *
+     * <p>
      * children     -> An array of child node indices, which acts as a lookup table to access them.
      */
     private final String[] children;
@@ -42,46 +42,61 @@ public class RTreeInnerNode<CustomPolygon extends Comparable<CustomPolygon>> ext
 
     /**
      * Getters & Setters
+     * <p>
+     * <p>
+     * Gets an array of child node indices stored in the RTreeInnerNode
+     *
+     * @return array of child node indices
      */
     public String[] getChildren() {
         return children;
     }
 
     /**
-     * Gets a child with specific index
-     * @return Node which is child at specified index
+     * Gets the child node at the given index
+     *
+     * @param index the index of the child node to retrieve
+     * @return child node at the given index, or null if not found
+     * @throws DBAppException if there is an issue deserializing the child node
      */
     public RTreeNode<CustomPolygon> getChild(int index) throws DBAppException {
         return (children[index] == null) ? null : deserializeNode(children[index]);
     }
 
     /**
-     * Gets the first child of this node.
-     * @return first child node
+     * Retrieves the first child node of this RTreeInnerNode.
+     *
+     * @return the first child node
+     * @throws DBAppException if there is an issue deserializing the child node
      */
     public RTreeNode<CustomPolygon> getFirstChild() throws DBAppException {
         return deserializeNode(children[0]);
     }
 
     /**
-     * Gets the last child of this node
-     * @return last child node
+     * Retrieves the last child node of this RTreeInnerNode.
+     *
+     * @return the last child node
+     * @throws DBAppException if there is an issue deserializing the child node
      */
     public RTreeNode<CustomPolygon> getLastChild() throws DBAppException {
         return deserializeNode(children[getNumberOfKeys()]);
     }
 
     /**
-     * Sets a child at specific index
+     * Sets the child node at the given index.
+     *
+     * @param index the index of the child node to set
+     * @param child the child node to set, or null to remove the child
      */
     public void setChild(int index, RTreeNode<CustomPolygon> child) {
         children[index] = (child == null) ? null : child.getNodeName();
     }
 
-
-
     /**
-     * @return the minimum keys values in InnerNode
+     * Retrieves the minimum number of keys (child nodes) the RTreeInnerNode can have.
+     *
+     * @return the minimum number of keys for this RTreeInnerNode
      */
     public int getMinKeys() {
         return this.isRoot() ? 1 : (getOrder() + 2) / 2 - 1;
@@ -89,12 +104,32 @@ public class RTreeInnerNode<CustomPolygon extends Comparable<CustomPolygon>> ext
 
 
     /**
-     * Inserts key at index
+     * Finds ( using binary search ) the index where the given key should be inserted in this RTreeInnerNode.
+     *
+     * @param key the key to find the index for
+     * @return the index where the given key should be inserted
+     */
+    public int findIndex(CustomPolygon key) {
+        for (int i = 0; i < getNumberOfKeys(); ++i) {
+            int cmp = getKey(i).compareTo(key);
+            if (cmp > 0)
+                return i;
+        }
+        // If no key is greater than the given key, return the index after the last key
+        return getNumberOfKeys();
+    }
+
+
+    /**
+     * Inserts a new key and reference into the R-Tree node.
+     *
      * @param key    key to be inserted
-     * @param ref    reference which that inserted key is located
-     * @param parent parent of that inserted node
-     * @param ptr    index of pointer in the parent node pointing to the current node
-     * @return value to be pushed up to the parent
+     * @param ref    reference where this inserted key is located
+     * @param parent parent of this inserted node
+     * @param ptr    index of pointer in the parent node pointing to this node
+     * @return a PushUpRTree object containing the new key and node to be pushed up to the parent,
+     * or null if the insertion was successful without needing to push up
+     * @throws DBAppException if there is an issue deserializing or serializing the child nodes
      */
     public PushUpRTree<CustomPolygon> insert(CustomPolygon key, Ref ref, RTreeInnerNode<CustomPolygon> parent, int ptr) throws DBAppException {
         int index = findIndex(key);
@@ -127,9 +162,150 @@ public class RTreeInnerNode<CustomPolygon extends Comparable<CustomPolygon>> ext
 
 
     /**
-     * Splits the inner node
-     * @param pushUpRTree key to be pushed up to the parent in case of splitting
-     * @return Inner node after splitting
+     * Inserts the given key at the specified index in this RTreeInnerNode.
+     * <p>
+     * This method shifts all keys and child pointers after the given index to
+     * make room for the new key. It then sets the new key at the specified
+     * index and increments the number of keys in the node.
+     *
+     * @param index the index at which to insert the key
+     * @param key   the key to be inserted
+     * @throws DBAppException if an error occurs during the insertion
+     */
+    private void insertAt(int index, Comparable<CustomPolygon> key) throws DBAppException {
+        // Shift all keys and child pointers after the given index to make room
+        for (int i = getNumberOfKeys(); i > index; --i) {
+            this.setKey(i, this.getKey(i - 1));
+            this.setChild(i + 1, this.getChild(i));
+        }
+
+        // Set the new key at the specified index
+        this.setKey(index, key);
+
+        // Increment the number of keys in the node
+        setNumberOfKeys(getNumberOfKeys() + 1);
+    }
+
+
+    /**
+     * Inserts the given key at the given index and adjusts the left child pointer.
+     * Where it sets the child pointer to the left of the inserted key to the given left child.
+     *
+     * @param index     the index where the key is inserted
+     * @param key       the key to be inserted in that index
+     * @param leftChild the child node to be set as the left child of the inserted key
+     * @throws DBAppException if an error occurs during the insertion
+     */
+    public void insertLeftAt(int index, Comparable<CustomPolygon> key, RTreeNode<CustomPolygon> leftChild) throws DBAppException {
+        insertAt(index, key);
+        this.setChild(index + 1, this.getChild(index));
+        this.setChild(index, leftChild);
+    }
+
+
+    /**
+     * Inserts the given key at the given index and adjusts the right child pointer.
+     * Where it sets the child pointer to the right of the inserted key to the given right child.
+     *
+     * @param index      the index where the key is inserted
+     * @param key        the key to be inserted in that index
+     * @param rightChild the child node to be set as the right child of the inserted key
+     * @throws DBAppException if an error occurs during the insertion
+     */
+    public void insertRightAt(int index, Comparable<CustomPolygon> key, RTreeNode<CustomPolygon> rightChild) throws DBAppException {
+        insertAt(index, key);
+        this.setChild(index + 1, rightChild);
+    }
+
+
+    /**
+     * Searches for the record reference of the given key.
+     *
+     * @param key the key to search for
+     * @return the record reference for the given key, if found
+     * @throws DBAppException if an error occurs during the search
+     */
+    @Override
+    public GeneralRef search(CustomPolygon key) throws DBAppException {
+        // Find the index of the child node that may contain the given key
+        RTreeNode<CustomPolygon> rTreeNode = deserializeNode(children[findIndex(key)]);
+
+        // Search for the record reference in the child node
+        return rTreeNode.search(key);
+    }
+
+
+    /**
+     * Searches for all record references that intersect the given key.
+     * "MTE" in the method name stands for "Match Totally or Envelope".
+     * Indicating searching for record references that either
+     * Exactly match the given key or are enveloped by the given key.
+     *
+     * @param key the key to search for
+     * @return list of all record references that intersect the given key
+     * @throws DBAppException if an error occurs during the search
+     */
+    public ArrayList<GeneralRef> searchMTE(CustomPolygon key) throws DBAppException {
+        // Find the index of the child node that may contain the given key
+        RTreeNode<CustomPolygon> b = deserializeNode(children[findIndex(key)]);
+
+        // Search for all matching record references in the child node
+        return b.searchMTE(key);
+    }
+
+
+    /**
+     * Searches for all record references that match the given key.
+     * "MT" in the method name stands for "Match Totally"
+     * Indicating searching for exact matches of the given key.
+     *
+     * @param key the key to search for
+     * @return list of all record references that match the given key
+     * @throws DBAppException if an error occurs during the search
+     */
+    public ArrayList<GeneralRef> searchMT(CustomPolygon key) throws DBAppException {
+        RTreeNode<CustomPolygon> rTreeNode = deserializeNode(children[findIndex(key)]);
+        return rTreeNode.searchMT(key);
+    }
+
+
+    /**
+     * Searches for the leaf node that contains the record reference for the given key.
+     *
+     * @param key the key to search for
+     * @return the leaf node that contains the record reference for the given key
+     * @throws DBAppException if an error occurs during the search
+     */
+    public RTreeLeafNode searchForUpdateRef(CustomPolygon key) throws DBAppException {
+        RTreeNode<CustomPolygon> rTreeNode = deserializeNode(children[findIndex(key)]);
+        return rTreeNode.searchForUpdateRef(key);
+    }
+
+
+    /**
+     * Searches for the appropriate leaf node to insert the given key.
+     *
+     * @param key         the key to search for
+     * @param tableLength the length of the table
+     * @return the leaf node to insert the given key
+     * @throws DBAppException if an error occurs during the search
+     */
+    public Ref searchForInsertion(CustomPolygon key, int tableLength) throws DBAppException {
+        RTreeNode<CustomPolygon> rTreeNode = deserializeNode(children[findIndex(key)]);
+        return rTreeNode.searchForInsertion(key, tableLength);
+    }
+
+
+    /**
+     * Splits the inner node by moving half of the keys and child pointers to a new node.
+     * <p>
+     * <p>
+     * This method is needed when an inner node becomes full ( number of keys reach the maximum order of the R-Tree ).
+     * It creates a new inner node and redistributes the keys and child pointers between the original node and the new node.
+     *
+     * @param pushUpRTree object containing both the key and the new child node to be pushed up to the parent node
+     * @return the new inner node created after the split
+     * @throws DBAppException if an error occurs during the split operation
      */
     @SuppressWarnings("unchecked")
     public RTreeInnerNode<CustomPolygon> split(PushUpRTree<CustomPolygon> pushUpRTree) throws DBAppException {
@@ -145,7 +321,7 @@ public class RTreeInnerNode<CustomPolygon extends Comparable<CustomPolygon>> ext
         RTreeInnerNode<CustomPolygon> newNode = new RTreeInnerNode<>(getOrder());
         for (int i = midIndex; i < totalKeys - 1; ++i) {
             newNode.insertRightAt(i - midIndex, this.getKey(i), this.getChild(i + 1));
-            setNumberOfKeys(getNumberOfKeys()-1);
+            setNumberOfKeys(getNumberOfKeys() - 1);
         }
         newNode.setChild(0, this.getChild(midIndex));
 
@@ -160,138 +336,17 @@ public class RTreeInnerNode<CustomPolygon extends Comparable<CustomPolygon>> ext
 
 
     /**
-     * Finds the index of the given
-     * @param key to be looked for
-     * @return index of that given key
-     */
-    public int findIndex(CustomPolygon key) {
-        for (int i = 0; i < getNumberOfKeys(); ++i) {
-            int cmp = getKey(i).compareTo(key);
-            if (cmp > 0)
-                return i;
-        }
-        return getNumberOfKeys();
-    }
-
-    // below searches here
-
-
-    /**
-     * Inserts at the given index the given key
-     * @param index where it inserts the key
-     * @param key   to be inserted at index
-     */
-    private void insertAt(int index, Comparable<CustomPolygon> key) throws DBAppException {
-        for (int i = getNumberOfKeys(); i > index; --i) {
-            this.setKey(i, this.getKey(i - 1));
-            this.setChild(i + 1, this.getChild(i));
-        }
-        this.setKey(index, key);
-        setNumberOfKeys(getNumberOfKeys()+1);
-    }
-
-
-    /**
-     * Inserts the given key and adjust left pointer to the given left child
-     * @param index     where key is inserted
-     * @param key       to be inserted in that index
-     * @param leftChild child which this node points to with pointer at left of that index
-     */
-    public void insertLeftAt(int index, Comparable<CustomPolygon> key, RTreeNode<CustomPolygon> leftChild) throws DBAppException {
-        insertAt(index, key);
-        this.setChild(index + 1, this.getChild(index));
-        this.setChild(index, leftChild);
-    }
-
-
-    /**
-     * Inserts the given key and adjust right pointer to the given right child
-     * @param index      where key is inserted
-     * @param key        to be inserted in that index
-     * @param rightChild child which this node points to with pointer at right of that index
-     */
-    public void insertRightAt(int index, Comparable<CustomPolygon> key, RTreeNode<CustomPolygon> rightChild) throws DBAppException {
-        insertAt(index, key);
-        this.setChild(index + 1, rightChild);
-    }
-
-
-    /**
-     * Deletes the given key
-     * @return true if it is deleted or false otherwise
-     */
-    public boolean delete(CustomPolygon key, RTreeInnerNode<CustomPolygon> parent, int ptr) throws DBAppException {
-        boolean done = false;
-
-        for (int i = 0; !done && i < getNumberOfKeys(); ++i)
-            if (getKeys()[i].compareTo(key) > 0) {
-                RTreeNode<CustomPolygon> b = deserializeNode(children[i]);
-                done = b.delete(key, this, i);
-                b.serializeNode();
-            }
-
-        if (!done) {
-            RTreeNode<CustomPolygon> rTreeNode = deserializeNode(children[getNumberOfKeys()]);
-            done = rTreeNode.delete(key, this, getNumberOfKeys());
-            rTreeNode.serializeNode();
-        }
-
-        if (getNumberOfKeys() < this.getMinKeys()) {
-            if (isRoot()) {
-                this.getFirstChild().setRoot(true);
-                getFirstChild().serializeNode();
-                this.setRoot(false);
-                return done;
-            }
-            if (borrow(parent, ptr)) {
-                return done;
-            }
-            merge(parent, ptr);
-        }
-        return done;
-    }
-
-
-    public boolean delete(CustomPolygon key, RTreeInnerNode<CustomPolygon> parent, int ptr, String pageName) throws DBAppException {
-        boolean done = false;
-
-        for (int i = 0; !done && i < getNumberOfKeys(); ++i)
-            if (getKeys()[i].compareTo(key) > 0) {
-                RTreeNode<CustomPolygon> b = deserializeNode(children[i]);
-                done = b.delete(key, this, i, pageName);
-                b.serializeNode();
-            }
-
-        if (!done) {
-            RTreeNode<CustomPolygon> b = deserializeNode(children[getNumberOfKeys()]);
-            done = b.delete(key, this, getNumberOfKeys(), pageName);
-            b.serializeNode();
-        }
-
-        if (getNumberOfKeys() < this.getMinKeys()) {
-            if (this.isRoot()) {
-                RTreeNode<CustomPolygon> nd = this.getFirstChild();
-                nd.setRoot(true);
-                nd.serializeNode();
-                this.setRoot(false);
-                return done;
-
-            }
-
-            if (borrow(parent, ptr)) {
-                return done;
-            }
-            merge(parent, ptr);
-        }
-        return done;
-    }
-
-
-    /**
-     * Borrows from Right or left sibling
-     * @param parent of the current node
-     * @param ptr    index of pointer in the parent node pointing to the current node
-     * @return true if it could borrow form either sibling or false otherwise
+     * Borrows a key and child pointer either from left or right sibling node.
+     * <p>
+     * <p>
+     * This method is needed to balance the number of keys and child pointers between the current node and its left or right sibling.
+     * If one of the siblings has more keys than the minimum required,
+     * It will borrow a key and child pointer from that sibling and update the parent node accordingly.
+     *
+     * @param parent the parent node of the current node
+     * @param ptr    the index of the pointer in the parent node that points to the current node
+     * @return true if a key and child pointer were successfully borrowed from either sibling, false otherwise
+     * @throws DBAppException if an error occurs during the borrowing operation
      */
     public boolean borrow(RTreeInnerNode<CustomPolygon> parent, int ptr) throws DBAppException {
         //check left sibling
@@ -328,9 +383,16 @@ public class RTreeInnerNode<CustomPolygon extends Comparable<CustomPolygon>> ext
 
 
     /**
-     * Merges with either left or right sibling
-     * @param parent of the current node
-     * @param ptr    index of pointer in the parent node pointing to the current node
+     * Merges the current node with either the left or right sibling node.
+     * <p>
+     * <p>
+     * This method is needed when the current node has fewer keys than the minimum required.
+     * It will either merge the current node with the left sibling or the right sibling,
+     * Depending on which one has the fewest keys.
+     *
+     * @param parent the parent node of the current node
+     * @param ptr    the index of the pointer in the parent node that points to the current node
+     * @throws DBAppException if an error occurs during the merging operation
      */
     public void merge(RTreeInnerNode<CustomPolygon> parent, int ptr) throws DBAppException {
         if (ptr > 0) {
@@ -350,14 +412,107 @@ public class RTreeInnerNode<CustomPolygon extends Comparable<CustomPolygon>> ext
 
 
     /**
-     * Merges the given foreign node with the current node with parent key
-     * @param parentKey  the pulled key from the parent
+     * Merges the current node with the given foreign node using a parent key.
+     * <p>
+     * This method is needed when the current node has fewer keys than the minimum required.
+     *
+     * @param parentKey   the key pulled from the parent node
      * @param foreignNode the node to be merged with the current node
+     * @throws DBAppException if an error occurs during the merging operation
      */
     public void merge(Comparable<CustomPolygon> parentKey, RTreeInnerNode<CustomPolygon> foreignNode) throws DBAppException {
         this.insertRightAt(getNumberOfKeys(), parentKey, foreignNode.getFirstChild());
         for (int i = 0; i < foreignNode.getNumberOfKeys(); ++i)
             this.insertRightAt(getNumberOfKeys(), foreignNode.getKey(i), foreignNode.getChild(i + 1));
+    }
+
+
+    /**
+     * Deletes the given key from the R-Tree node.
+     *
+     * @param key    The 'CustomPolygon' key to be deleted.
+     * @param parent The parent 'RTreeInnerNode' of the current node.
+     * @param ptr    The index of the current node within the parent node.
+     * @return True if the key was successfully deleted, false otherwise.
+     * @throws DBAppException If an exception occurs during the deletion process.
+     */
+    public boolean delete(CustomPolygon key, RTreeInnerNode<CustomPolygon> parent, int ptr) throws DBAppException {
+        boolean done = false;
+
+        // Recursively traverse the tree to find the node containing the key
+        for (int i = 0; !done && i < getNumberOfKeys(); ++i)
+            if (getKeys()[i].compareTo(key) > 0) {
+                RTreeNode<CustomPolygon> b = deserializeNode(children[i]);
+                done = b.delete(key, this, i);
+                b.serializeNode();
+            }
+
+        // If the key was not found in the previous loop, search in the last child node
+        if (!done) {
+            RTreeNode<CustomPolygon> rTreeNode = deserializeNode(children[getNumberOfKeys()]);
+            done = rTreeNode.delete(key, this, getNumberOfKeys());
+            rTreeNode.serializeNode();
+        }
+
+        if (getNumberOfKeys() < this.getMinKeys()) {
+            if (isRoot()) {
+                this.getFirstChild().setRoot(true);
+                getFirstChild().serializeNode();
+                this.setRoot(false);
+                return done;
+            }
+            if (borrow(parent, ptr)) {
+                return done;
+            }
+            merge(parent, ptr);
+        }
+        return done;
+    }
+
+
+    /**
+     * Deletes the given key from the R-Tree node from a specific page's storage for the deletion.
+     * This is needed when deleting a value from a different page's storage, not just the current page.
+     *
+     * @param key      The 'CustomPolygon' key to be deleted.
+     * @param parent   The parent 'RTreeInnerNode' of the current node.
+     * @param ptr      The index of the current node within the parent node.
+     * @param pageName The name of the page's storage used for deletion associated with the R-Tree node.
+     * @return True if the key was successfully deleted, false otherwise.
+     * @throws DBAppException If an exception occurs during the deletion process.
+     */
+    public boolean delete(CustomPolygon key, RTreeInnerNode<CustomPolygon> parent, int ptr, String pageName) throws DBAppException {
+        boolean done = false;
+
+        for (int i = 0; !done && i < getNumberOfKeys(); ++i)
+            if (getKeys()[i].compareTo(key) > 0) {
+                RTreeNode<CustomPolygon> b = deserializeNode(children[i]);
+                done = b.delete(key, this, i, pageName);
+                b.serializeNode();
+            }
+
+        if (!done) {
+            RTreeNode<CustomPolygon> b = deserializeNode(children[getNumberOfKeys()]);
+            done = b.delete(key, this, getNumberOfKeys(), pageName);
+            b.serializeNode();
+        }
+
+        if (getNumberOfKeys() < this.getMinKeys()) {
+            if (this.isRoot()) {
+                RTreeNode<CustomPolygon> nd = this.getFirstChild();
+                nd.setRoot(true);
+                nd.serializeNode();
+                this.setRoot(false);
+                return done;
+
+            }
+
+            if (borrow(parent, ptr)) {
+                return done;
+            }
+            merge(parent, ptr);
+        }
+        return done;
     }
 
 
@@ -368,53 +523,28 @@ public class RTreeInnerNode<CustomPolygon extends Comparable<CustomPolygon>> ext
      * @param childPtr either 0 for deleting the left pointer or 1 for deleting the right pointer
      */
     public void deleteAt(int keyIndex, int childPtr) {
+
+        // Shift the remaining keys and pointers to the left, effectively deleting the key at the given index
         for (int i = keyIndex; i < getNumberOfKeys() - 1; ++i) {
             setKeys(new Comparable[]{getKeys()[i + 1]});
             children[i + childPtr] = children[i + childPtr + 1];
         }
+
+        // If the child pointer to be deleted is the left pointer, move the rightmost pointer to the left
         if (childPtr == 0)
             children[getNumberOfKeys() - 1] = children[getNumberOfKeys()];
-        setNumberOfKeys(getNumberOfKeys()-1);
+        setNumberOfKeys(getNumberOfKeys() - 1);
     }
 
 
     /**
-     * Searches for the record reference of the given key
-     */
-    @Override
-    public GeneralRef search(CustomPolygon key) throws DBAppException {
-        RTreeNode<CustomPolygon> rTreeNode = deserializeNode(children[findIndex(key)]);
-
-        return rTreeNode.search(key);
-    }
-
-    public ArrayList<GeneralRef> searchMTE(CustomPolygon key) throws DBAppException {
-        RTreeNode<CustomPolygon> b = deserializeNode(children[findIndex(key)]);
-        return b.searchMTE(key);
-    }
-
-
-    public ArrayList<GeneralRef> searchMT(CustomPolygon key) throws DBAppException {
-        RTreeNode<CustomPolygon> rTreeNode = deserializeNode(children[findIndex(key)]);
-        return rTreeNode.searchMT(key);
-    }
-
-
-    public RTreeLeafNode searchForUpdateRef(CustomPolygon key) throws DBAppException {
-        RTreeNode<CustomPolygon> rTreeNode = deserializeNode(children[findIndex(key)]);
-        return rTreeNode.searchForUpdateRef(key);
-    }
-
-    public Ref searchForInsertion(CustomPolygon key, int tableLength) throws DBAppException {
-        RTreeNode<CustomPolygon> rTreeNode = deserializeNode(children[findIndex(key)]);
-        return rTreeNode.searchForInsertion(key, tableLength);
-    }
-
-
-    /**
-     * Deletes the key at the given index
+     * Deletes the key at the given index.
+     *
+     * @param index The index of the key to be deleted.
      */
     public void deleteAt(int index) {
+
+        // Call the 'deleteAt' method with the child pointer set to 1 (right pointer)
         deleteAt(index, 1);
     }
 
