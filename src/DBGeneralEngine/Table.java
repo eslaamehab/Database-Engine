@@ -70,47 +70,92 @@ public class Table implements Serializable {
 
     /**
      * Getters & Setters
+     * <p>
+     *
+     *
+     * Retrieves the maximum number of rows allowed on a single page within the table.
+     *
+     * @return The maximum number of rows per page.
      */
     public int getMaxRowsInPage() {
         return maxRowsInPage;
     }
 
+    /**
+     * Retrieves the last identifier value assigned to a record within the table. (used for auto-increment)
+     *
+     * @return The last assigned identifier value.
+     */
     public int getLastId() {
         return lastId;
     }
 
+    /**
+     * Retrieves the name of the column used for clustering data within the table.
+     *
+     * @return The name of the clustering key column.
+     */
     public String getClusteringKey() {
         return clusteringKey;
     }
 
-    public int getLastId(boolean b) {
-        if (b)
+    /**
+     * Retrieves the last identifier value assigned to a record within the table.
+     * It allows for optional auto-increment.
+     *
+     * @param increment If true, increments the lastId value by 1 and returns the new value.
+     *                  If false, simply returns the current lastId value.
+     * @return The last assigned identifier value, potentially incremented.
+     */
+    public int getLastId(boolean increment) {
+        if (increment)
             return lastId++;
         return lastId;
     }
 
+    /**
+     * Retrieves a reference to the internal Hashtable that maps column names to their corresponding TreeIndex instances.
+     *
+     * @return An unmodifiable reference to the Hashtable containing column name to TreeIndex mappings.
+     */
     public Hashtable<String, TreeIndex> getColNameBTreeIndex() {
         return treeIndexColumnName;
     }
 
+    /**
+     * Retrieves a reference to the internal Vector containing the table's data pages.
+     *
+     * @return An unmodifiable reference to the Vector containing table page names.
+     */
     public Vector<String> getPages() {
         return pages;
     }
 
+    /**
+     * Generates a new page name based on the table name and a sequential numbering scheme.
+     *
+     * @return A string representing the name of a new page for the table.
+     */
     public String getNewPageName() {
         return tableName + ((pages.size() == 0) ? 0
                 : Integer.parseInt((pages.get(pages.size() - 1)).substring(tableName.length())) + 1);
     }
 
+    /**
+     * Retrieves a reference to the internal Hashtable that maps column names to their corresponding TreeIndex instances.
+     *
+     * @return An unmodifiable reference to the Hashtable containing column name to TreeIndex mappings.
+     */
     public Hashtable<String, TreeIndex> getTreeIndexColumnName() {
         return treeIndexColumnName;
     }
 
     /**
-     * Retrieve the maximum value from the page at the specified index.
+     * Retrieves the maximum value from the page at the given index.
+     *
      * @param index The index of the page from which to retrieve the maximum value.
-     * @return The maximum value from the specified page.
-     * @throws DBAppException If an error occurs during the process.
+     * @return      The maximum value from the specified page.
+     * @throws DBAppException If an error occurs during the process of deserializing the page.
      */
     public Comparable getMax(int index) throws DBAppException {
         // Get the page name from the pages list using the specified index
@@ -127,10 +172,11 @@ public class Table implements Serializable {
 
 
     /**
-     * Retrieve the minimum value from the page at the specified index.
+     * Retrieves the minimum value from the page at the specified index.
+     *
      * @param index The index of the page from which to retrieve the minimum value.
      * @return The minimum value from the specified page.
-     * @throws DBAppException If an error occurs during the process.
+     * @throws DBAppException If an error occurs during the process of deserializing the page.
      */
     public Comparable getMin(int index) throws DBAppException {
         // Get the page name from the pages list using the specified index
@@ -143,44 +189,96 @@ public class Table implements Serializable {
         return min;
     }
 
-
+    /**
+     * Retrieves the zero-based index of the attribute that acts as the primary key within the table.
+     *
+     * @return  The index of the primary key attribute.
+     */
     public int getPrimaryPosition() {
         return primaryPosition;
     }
 
+    /**
+     * Retrieves the name assigned to this table.
+     *
+     * @return  The name of the table.
+     */
     public String getTableName() {
         return tableName;
     }
 
+    /**
+     * Retrieves the index of a specific data page within the table.
+     * This method delegates the task of extracting the numeric suffix from the page name to the getSuffix method and uses that value as the index.
+     *
+     * @param pageName The name of the data page to locate.
+     * @return  The index of the data page within the table, or -1 if not found.
+     */
     public int getPageIndex(String pageName) {
         return getSuffix(pageName);
     }
 
+    /**
+     * Extracts the numeric suffix from a data page name.
+     *
+     * @param pageName The name of the data page to extract the suffix from.
+     * @return The numeric suffix extracted from the page name.
+     */
     public int getSuffix(String pageName) {
         return Integer.parseInt(pageName.substring(tableName.length()));
     }
 
 
+    /**
+     * Updates the value used for auto-incrementing record identifiers within the table.
+     *
+     * @param lastId The new value to be used for the next auto-incremented identifier.
+     */
     public void setLastId(int lastId) {
         this.lastId = lastId;
     }
 
+    /**
+     * Sets the maximum number of rows allowed on a single data page within the table.
+     *
+     * @param maxRowsInPage The new maximum number of rows allowed per page.
+     */
     public void setMaxRowsInPage(int maxRowsInPage) {
         this.maxRowsInPage = maxRowsInPage;
     }
 
+    /**
+     * Updates the internal collection of data page names associated with this table.
+     *
+     * @param pages A Vector containing the new set of data page names.
+     */
     public void setPages(Vector<String> pages) {
         this.pages = pages;
     }
 
+    /**
+     * Sets the name of the attribute used for clustering data within the table.
+     *
+     * @param clusteringKey The name of the attribute to be used for clustering.
+     */
     public void setClusteringKey(String clusteringKey) {
         this.clusteringKey = clusteringKey;
     }
 
+    /**
+     * Updates the name assigned to this table.
+     *
+     * @param name The new name for the table.
+     */
     public void setTableName(String name) {
         tableName = name;
     }
 
+    /**
+     * Sets the zero-based index of the attribute that acts as the primary key within the table.
+     *
+     * @param pos The new index of the primary key attribute.
+     */
     public void setPrimaryPosition(int pos) {
         primaryPosition = pos;
     }
