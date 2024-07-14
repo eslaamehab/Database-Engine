@@ -9,11 +9,25 @@ import src.Ref.GeneralRef;
 import src.Ref.OverflowRef;
 
 
+/**
+ * The Table class represents a table structure within a database system.
+ * It is serializable, allowing it to be stored and retrieved from persistent storage.
+ * It holds information about the table's pages, maximum number of rows per page, primary key position, last assigned ID, table name, clustering key, and any associated tree indexes.
+ */
 public class Table implements Serializable {
-
 
     /**
      * Attributes
+     * <p>
+     *
+     * pages                    ->  A Vector containing the table's data pages.
+     * maxRowsInPage            ->  The maximum number of rows allowed on a single page within the table.
+     * primaryPosition          ->  The position of the primary key column within the table schema. (zero-based indexing)
+     * lastId                   ->  The last identifier value assigned to a record within the table. (used for auto-increment)
+     * tableName                ->  The name of the table as defined in the database schema.
+     * clusteringKey            ->  The name of the column used for clustering data within the table.
+     * treeIndexColumnName      -> A Hashtable that maps column names to their corresponding TreeIndex instances.
+     *                                  ( used for efficient data retrieval )
      */
     private Vector<String> pages = new Vector<>();
     private int maxRowsInPage;
@@ -26,11 +40,24 @@ public class Table implements Serializable {
 
     /**
      * Constructors
+     * <p>
+     *
+     * Default constructor for the Table class. Initializes an empty Table object.
      */
     public Table() {
 
     }
 
+    /**
+     * Constructor that takes arguments to define all aspects of the table structure.
+     *
+     * @param pages A Vector containing the table's data pages.
+     * @param maxRowsInPage The maximum number of rows allowed on a single page.
+     * @param primaryPosition The position of the primary key column (zero-based indexing).
+     * @param lastId The last identifier value assigned to a record.
+     * @param tableName The name of the table.
+     * @param clusteringKey The name of the column used for clustering data.
+     */
     public Table(Vector<String> pages, int maxRowsInPage, int primaryPosition, int lastId, String tableName, String clusteringKey) {
         this.pages = pages;
         this.maxRowsInPage = maxRowsInPage;
