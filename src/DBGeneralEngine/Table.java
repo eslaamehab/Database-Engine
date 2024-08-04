@@ -285,14 +285,7 @@ public class Table implements Serializable {
 
 
     /**
-     * above done
-     * below still
-     * now  resume
-     * breakpoint
-     */
-
-    /**
-     * Serialize the current state of the pages to the specified file address.
+     * Serialize the current state of the pages to a file at the given file address.
      *
      * @param address The address of the file to serialize the pages to.
      */
