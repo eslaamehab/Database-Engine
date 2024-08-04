@@ -311,8 +311,8 @@ public class Table implements Serializable {
      * Deserialize a page object from disk with the given name.
      *
      * @param name The name of the page to deserialize.
-     * @return The deserialized Page object.
-     * @throws DBAppException If an error occurs during deserialization.
+     * @return The deserialized page object.
+     * @throws DBAppException if an IOException or ClassNotFoundException occurs during the deserialization process
      */
     public static Page deserialize(String name) throws DBAppException {
         try {
