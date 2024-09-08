@@ -398,9 +398,10 @@ public class Table implements Serializable {
 
 
     /**
-     * Performs a binary search to find the page and tuple index of a given key in the table.
+     * Searches for a tuple in the table based on the given key using a binary search algorithm.
+     * If the key is found, returns the name of the page and the index of the tuple.
      *
-     * @param key the key to search for
+     * @param key the key to search for in the table
      * @return a string representing the page name and tuple index of the key
      * @throws DBAppException if the key does not exist in the table or if a ClassCastException occurs
      */
@@ -892,6 +893,103 @@ public class Table implements Serializable {
 
 
     /**
+     * Performs a search operation on either the leftmost tree index leaf or linear probing,
+     * based on the given column name, value, and operator.
+     *
+     * @param strColumnName the name of the column to perform the search on
+     * @param objValue the value to search for
+     * @param strOperator the operator to use in the search ("<" or "<=")
+     * @param position the position of the column in the table
+     * @return an ArrayList of tuples matching the search criteria
+     * @throws DBAppException if an error occurs during the search operation
+     */
+    private ArrayList<Tuple> ltOrLtlIndex(
+            String strColumnName,
+            Object objValue,
+            String strOperator,
+            int position) throws DBAppException {
+
+        if (strColumnName.equals(clusteringKey))
+            return ltOrLtlLinear(objValue, strOperator, position);
+
+        ArrayList<Tuple> result = new ArrayList<>();
+        String lastPage = pages.get(pages.size() - 1);
+        int lastPageMaxNum = Integer.parseInt(lastPage.substring(tableName.length()));
+        boolean[] visited = new boolean[lastPageMaxNum + 1];
+        TreeIndex treeIndex = treeIndexColumnName.get(strColumnName);
+        LeafNode LeafNode = treeIndex.getLeftmostLeaf();
+        while (LeafNode != null) {
+            int i;
+            for (i = 0; i < LeafNode.getNumberOfKeys(); i++) {
+                GeneralRef generalRef = LeafNode.getRecord(i);
+                if (LeafNode.getKey(i).compareTo(objValue) > 0)
+                    break;
+                if (LeafNode.getKey(i).compareTo(objValue) == 0 && strOperator.length() == 1)
+                    break;
+                Set<Ref> ref = fillInRef(generalRef);
+                for (Ref r : ref) {
+                    String pageName = r.getPage();
+                    int currentPageNo = Integer.parseInt(pageName.substring(tableName.length()));
+                    if (visited[currentPageNo])
+                        continue;
+                    addToResultSet(result, pageName, position, objValue, strOperator);
+                    visited[currentPageNo] = true;
+                }
+
+            }
+            if (i < LeafNode.getNumberOfKeys())
+                break;
+        }
+        return result;
+    }
+
+
+
+    /**
+     * Performs a search operation on either the main tree or the main tree with linear probing,
+     * based on the given column name, value, and operator.
+     *
+     * @param strColumnName the name of the column to perform the search on
+     * @param objValue the value to search for
+     * @param strOperator the operator to use in the search ("<" or "<=")
+     * @param position the position of the column in the table
+     * @return an ArrayList of tuples matching the search criteria
+     * @throws DBAppException if an error occurs during the search operation
+     */
+    private ArrayList<Tuple> mtOrMtlIndex(
+            String strColumnName,
+            Object objValue,
+            String strOperator,
+            int position) throws DBAppException {
+
+        if (strColumnName.equals(clusteringKey))
+            return mtOrMtlLinear(objValue, strOperator, position);
+        else {
+            ArrayList<Tuple> results = new ArrayList<>();
+            String lastPage = pages.get(pages.size() - 1);
+            int lastPageMaxNum = Integer.parseInt(lastPage.substring(tableName.length()));
+            boolean[] visited = new boolean[lastPageMaxNum + 1];
+            TreeIndex treeIndex = treeIndexColumnName.get(strColumnName);
+            ArrayList referenceList = strOperator.equals(">") ? treeIndex.searchMT((Comparable) objValue)
+                    : treeIndex.searchMTE((Comparable) objValue);
+            for (Object o : referenceList) {
+                GeneralRef currentGR = (GeneralRef) o;
+                ArrayList<Ref> currentRefsForOneKey = currentGR.getAllRef();
+                for (Ref currentReference : currentRefsForOneKey) {
+                    String pageName = currentReference.getPage();
+                    int curPageNum = Integer.parseInt(pageName.substring(tableName.length()));
+                    if (visited[curPageNum])
+                        continue;
+                    addToResultSet(results, pageName, position, objValue, strOperator);
+                    visited[curPageNum] = true;
+                }
+            }
+            return results;
+        }
+    }
+
+
+    /**
      * Determines the appropriate index-based search method based on the operator,
      * and performs the search operation accordingly.
      *
@@ -948,58 +1046,6 @@ public class Table implements Serializable {
                 continue;
             addToResultSet(result, pageName, position, objValue, strOperator);
             visited[currentPageNo] = true;
-        }
-        return result;
-    }
-
-
-    /**
-     * Performs a search operation on either the leftmost tree index leaf or linear probing,
-     * based on the given column name, value, and operator.
-     *
-     * @param strColumnName the name of the column to perform the search on
-     * @param objValue the value to search for
-     * @param strOperator the operator to use in the search ("<" or "<=")
-     * @param position the position of the column in the table
-     * @return an ArrayList of tuples matching the search criteria
-     * @throws DBAppException if an error occurs during the search operation
-     */
-    private ArrayList<Tuple> ltOrLtlIndex(
-            String strColumnName,
-            Object objValue,
-            String strOperator,
-            int position) throws DBAppException {
-
-        if (strColumnName.equals(clusteringKey))
-            return ltOrLtlLinear(objValue, strOperator, position);
-
-        ArrayList<Tuple> result = new ArrayList<>();
-        String lastPage = pages.get(pages.size() - 1);
-        int lastPageMaxNum = Integer.parseInt(lastPage.substring(tableName.length()));
-        boolean[] visited = new boolean[lastPageMaxNum + 1];
-        TreeIndex treeIndex = treeIndexColumnName.get(strColumnName);
-        LeafNode LeafNode = treeIndex.getLeftmostLeaf();
-        while (LeafNode != null) {
-            int i;
-            for (i = 0; i < LeafNode.getNumberOfKeys(); i++) {
-                GeneralRef generalRef = LeafNode.getRecord(i);
-                if (LeafNode.getKey(i).compareTo(objValue) > 0)
-                    break;
-                if (LeafNode.getKey(i).compareTo(objValue) == 0 && strOperator.length() == 1)
-                    break;
-                Set<Ref> ref = fillInRef(generalRef);
-                for (Ref r : ref) {
-                    String pageName = r.getPage();
-                    int currentPageNo = Integer.parseInt(pageName.substring(tableName.length()));
-                    if (visited[currentPageNo])
-                        continue;
-                    addToResultSet(result, pageName, position, objValue, strOperator);
-                    visited[currentPageNo] = true;
-                }
-
-            }
-            if (i < LeafNode.getNumberOfKeys())
-                break;
         }
         return result;
     }
@@ -1174,50 +1220,6 @@ public class Table implements Serializable {
             }
         }
         return ref;
-    }
-
-
-    /**
-     * Performs a search operation on either the main tree or the main tree with linear probing,
-     * based on the given column name, value, and operator.
-     *
-     * @param strColumnName the name of the column to perform the search on
-     * @param objValue the value to search for
-     * @param strOperator the operator to use in the search ("<" or "<=")
-     * @param position the position of the column in the table
-     * @return an ArrayList of tuples matching the search criteria
-     * @throws DBAppException if an error occurs during the search operation
-     */
-    private ArrayList<Tuple> mtOrMtlIndex(
-            String strColumnName,
-            Object objValue,
-            String strOperator,
-            int position) throws DBAppException {
-
-        if (strColumnName.equals(clusteringKey))
-            return mtOrMtlLinear(objValue, strOperator, position);
-        else {
-            ArrayList<Tuple> results = new ArrayList<>();
-            String lastPage = pages.get(pages.size() - 1);
-            int lastPageMaxNum = Integer.parseInt(lastPage.substring(tableName.length()));
-            boolean[] visited = new boolean[lastPageMaxNum + 1];
-            TreeIndex treeIndex = treeIndexColumnName.get(strColumnName);
-            ArrayList referenceList = strOperator.equals(">") ? treeIndex.searchMT((Comparable) objValue)
-                    : treeIndex.searchMTE((Comparable) objValue);
-            for (Object o : referenceList) {
-                GeneralRef currentGR = (GeneralRef) o;
-                ArrayList<Ref> currentRefsForOneKey = currentGR.getAllRef();
-                for (Ref currentReference : currentRefsForOneKey) {
-                    String pageName = currentReference.getPage();
-                    int curPageNum = Integer.parseInt(pageName.substring(tableName.length()));
-                    if (visited[curPageNum])
-                        continue;
-                    addToResultSet(results, pageName, position, objValue, strOperator);
-                    visited[curPageNum] = true;
-                }
-            }
-            return results;
-        }
     }
 
 
