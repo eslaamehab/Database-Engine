@@ -7,11 +7,20 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+/**
+ * DBApp class represents the main database application.
+ * This class manages a collection of tables and configurations related to the database.
+ */
 public class DBApp implements Serializable {
 
 
     /**
      * Attributes
+     * <p>
+     *
+     * tables   ->    A Vector to hold the tables in the database
+     * MaximumRowsCountInPage   ->  Maximum number of rows allowed per page
+     * nodeSide ->  Size of nodes in the database structure
      */
     Vector<Table> tables = new Vector<>();
     private int MaximumRowsCountInPage;
@@ -20,83 +29,109 @@ public class DBApp implements Serializable {
 
     /**
      * Getters & Setters
+
+
+     * Returns the Vector of tables in the database.
+     *
+     * @return a Vector containing the tables
      */
     public Vector<Table> getTables() {
         return tables;
     }
 
+    /**
+     * Sets the Vector of tables for the database to the specified Vector.
+     *
+     * @param tables the new Vector of Table objects to be set for the database
+     */
     public void setTables(Vector<Table> tables) {
         this.tables = tables;
     }
 
+    /**
+     * Returns the maximum number of rows allowed per page.
+     *
+     * @return the maximum rows count in a page
+     */
     public int getMaximumRowsCountInPage() {
         return MaximumRowsCountInPage;
     }
 
+    /**
+     * Sets the maximum number of rows allowed per page.
+     *
+     * @param maximumRowsCountInPage the new maximum rows count to be set
+     */
     public void setMaximumRowsCountInPage(int maximumRowsCountInPage) {
         MaximumRowsCountInPage = maximumRowsCountInPage;
     }
 
+    /**
+     * Returns the size of nodes in the database structure.
+     *
+     * @return the node size
+     */
     public int getNodeSize() {
         return nodeSize;
     }
 
+    /**
+     * Sets the size of nodes in the database structure.
+     *
+     * @param nodeSize the new size of nodes to be set
+     */
     public void setNodeSize(int nodeSize) {
         this.nodeSize = nodeSize;
     }
 
 
     /**
-     * METADATA
-     * Inserts into metadata ->
-     * from hashtable take first entry and table name then compare column name from table with clustering key of metadata then true if they are equal
-     * hashtable first entry column name second entry column type
+     * Inserts a new entry into the metadata CSV file for a specified table.
+     * This includes the table name, column names, types, and whether each column is a clustering key.
+     *
+     * @param strTableName the name of the table
+     * @param strClusteringKeyColumn the name of the clustering key column
+     * @param htblColNameType a Hashtable mapping column names to their types
+     * @throws IOException if an error occurs while writing to the file
      */
     public static void insertIntoMetadata(String strTableName, String strClusteringKeyColumn, Hashtable<String, String> htblColNameType) throws IOException {
 
         FileWriter csvWriter = new FileWriter("metadata.csv", true);
         csvWriter.write("\n");
 
-        // loop be the number of columns
+        // Loop through each column in the hashtable
         for (int i = 0; i < htblColNameType.size(); i++) {
-            // obtaining the keys from the hashtable
 
+            // Obtaining the keys from the hashtable
             Enumeration<String> e = htblColNameType.keys();
             String ColumnName = (String) e.nextElement();
             String ColumnType = (String) e.nextElement();
 
-            // Table Name
-            csvWriter.append(strTableName);
-            csvWriter.append(',');
-            // Column Name
-            csvWriter.append(ColumnName);
-            csvWriter.append(',');
-            // Column Type
-            csvWriter.append(ColumnType);
-            csvWriter.append(',');
-
-            // Comparing column with clustering key column
+            // Write the table name, column name, and the column type, and clustering key status to the CSV
+            csvWriter.append(strTableName).append(',')
+                    .append(ColumnName).append(',')
+                    .append(ColumnType).append(',');
 
             boolean cluster;
             String clusterstring;
             cluster = strClusteringKeyColumn.contentEquals(ColumnName);
             clusterstring = Boolean.toString(cluster);
-            csvWriter.append(clusterstring); // Clustering key (boolean)
+            csvWriter.append(clusterstring);
         }
         csvWriter.flush();
         csvWriter.close();
     }
 
 
+    /**
+     * Initializes the metadata CSV file with header columns.
+     * This should be called to set up the structure of the metadata file before any entries are added.
+     *
+     * @throws IOException if an error occurs while writing to the file
+     */
     public static void insertIntoMetadataBase() throws IOException {
         FileWriter csvWriter = new FileWriter("metadata.csv");
-        csvWriter.append("TableName");
-        csvWriter.append(',');
-        csvWriter.append("ColumnName");
-        csvWriter.append(',');
-        csvWriter.append("ColumnType");
-        csvWriter.append(',');
-        csvWriter.append("ClusteringKey");
+        csvWriter.append("TableName,ColumnName,ColumnType,ClusteringKey");
         csvWriter.flush();
         csvWriter.close();
     }
