@@ -143,15 +143,29 @@ public class DBApp implements Serializable {
      * Or leave it empty if there is no code you want to
      * Execute at application startup
      */
+
+
+
+    /**
+     * Initializes application settings and creates necessary files and directories.
+     * This method loads configuration properties and sets up the data directory and metadata files.
+     *
+     * @throws IOException if an error occurs during file operations
+     * @throws DBAppException if an error occurs during initialization
+     */
     public void init() throws IOException, DBAppException {
 
         try {
+            // Load configuration properties
             InputStream inStream = new FileInputStream("config/DBApp.properties");
             Properties bal = new Properties();
             bal.load(inStream);
+
+            // Set maximum rows and node size from properties
             MaximumRowsCountInPage = Integer.parseInt(bal.getProperty("MaximumRowsCountInPage"));
             nodeSize = Integer.parseInt(bal.getProperty("NodeSize"));
 
+            // Create necessary directories and files
             File data = new File("data");
             data.mkdir();
             File metadata = new File("data/metadata.csv");
@@ -170,6 +184,11 @@ public class DBApp implements Serializable {
 
     }
 
+
+    /**
+     * Clears the metadata file and all data files in the data directory.
+     * This method deletes the metadata CSV and all other files in the data folder.
+     */
     public static void clear() {
         File metadata = new File("data/metadata.csv");
         metadata.delete();
@@ -183,6 +202,15 @@ public class DBApp implements Serializable {
     }
 
 
+    /**
+     * Reads a CSV file and returns its content as a 2D array of strings.
+     *
+     * @param path the path to the CSV file to read
+     *
+     * @return a 2D array containing the contents of the CSV file
+     * @throws FileNotFoundException if the file does not exist
+     * @throws IOException if an error occurs while reading the file
+     */
     public static String[][] readCSV(String path) throws FileNotFoundException, IOException {
         try (FileReader fr = new FileReader(path); BufferedReader br = new BufferedReader(fr);) {
             Collection<String[]> lines = new ArrayList<>();
@@ -192,6 +220,12 @@ public class DBApp implements Serializable {
         }
     }
 
+    /**
+     * Converts the contents of the metadata CSV into a 2D array.
+     *
+     * @return a 2D array representation of the metadata
+     * @throws IOException if an error occurs while reading the metadata file
+     */
     public static String[][] make2d() throws IOException {
         String[][] x = readCSV("metadata.csv");
         String[] elements = x[0][0].split(",");
@@ -204,6 +238,14 @@ public class DBApp implements Serializable {
         return y;
     }
 
+
+    /**
+     * Counts the occurrences of a specific string in a 2D array.
+     *
+     * @param arr the 2D array to search
+     * @param s the string to count
+     * @return the number of occurrences of the string in the array
+     */
     public static int occurrenceCounter(String[][] arr, String s) {
         int x = 0;
         for (String[] strings : arr)
@@ -211,6 +253,13 @@ public class DBApp implements Serializable {
         return x;
     }
 
+    /**
+     * Finds records in the metadata by table name and returns them as a 2D array.
+     *
+     * @param s the table name to search for
+     * @return a 2D array containing the records that match the table name
+     * @throws IOException if an error occurs while reading the metadata
+     */
     public static String[][] findRecordByTableName(String s) throws IOException {
         String[][] y = make2d();
         String[][] arr = new String[occurrenceCounter(y, s)][y.length];
@@ -224,11 +273,24 @@ public class DBApp implements Serializable {
         return arr;
     }
 
+
+    /**
+     * Finds a Table object by its name.
+     *
+     * @param s the name of the table to find
+     * @return the Table object if found, otherwise a new Table instance
+     */
     public Table findTable(String s) {
         for (Table table : tables) if (((Table) table).getTableName().equals(s)) return (Table) table;
         return new Table();
     }
 
+
+    /**
+     * Prints the contents of a 2D array to the console.
+     *
+     * @param arr the 2D array to print
+     */
     public static void print2d(String[][] arr) {
         for (String[] strings : arr) {
             for (String string : strings) System.out.print(string);
@@ -236,6 +298,18 @@ public class DBApp implements Serializable {
         }
     }
 
+
+    /**
+     * Retrieves the type of a column given its name and the table name.
+     *
+     * @param strTableName the name of the table
+     * @param s the name of the column
+     *
+     * @return the type of the column, or an empty string if not found
+     *
+     * @throws FileNotFoundException if the metadata file does not exist
+     * @throws IOException if an error occurs while reading the metadata
+     */
     public static String getType(String strTableName, String s) throws FileNotFoundException, IOException {
         String[][] arr = findRecordByTableName(strTableName);
         for (String[] strings : arr)
@@ -245,6 +319,15 @@ public class DBApp implements Serializable {
         return "";
     }
 
+
+    /**
+     * Retrieves the type of the clustering key for a given table.
+     *
+     * @param strTableName the name of the table
+     * @return the type of the clustering key, or an empty string if not found
+     * @throws FileNotFoundException if the metadata file does not exist
+     * @throws IOException if an error occurs while reading the metadata
+     */
     public static String getTypeOfKey(String strTableName) throws FileNotFoundException, IOException {
         String[][] arr = findRecordByTableName(strTableName);
         for (String[] strings : arr)
@@ -254,6 +337,13 @@ public class DBApp implements Serializable {
     }
 
 
+    /**
+     * Compares two polygons for equality based on their points.
+     *
+     * @param p1 the first polygon to compare
+     * @param p2 the second polygon to compare
+     * @return true if the polygons are equal, false otherwise
+     */
     public static boolean equalPolygons(final Polygon p1, final Polygon p2) {
         if (p1 == null) return (p2 == null);
         if (p2 == null) return false;
