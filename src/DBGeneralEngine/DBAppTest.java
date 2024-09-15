@@ -1,6 +1,8 @@
 package src.DBGeneralEngine;
 
+import java.awt.*;
 import java.io.*;
+import java.util.Hashtable;
 import java.util.Vector;
 
 import static java.util.Objects.hash;
@@ -251,7 +253,74 @@ public class DBAppTest implements Serializable {
      */
     public static void main(String[] args) throws IOException {
 
+        // Create a new instance of DBApp
+        DBApp dbApp = new DBApp();
 
+        // Define table name and clustering key
+        String strTableName = "TestTable";
+        String strClusteringKeyColumn = "ID";
+
+        // Create a Hashtable for column names and types
+        Hashtable<String, Object> columnTypes = new Hashtable<>();
+        columnTypes.put("ID", "java.lang.Integer");
+        columnTypes.put("Name", "java.lang.String");
+        columnTypes.put("Value", "java.lang.Double");
+        columnTypes.put("IsActive", "java.lang.Boolean");
+
+        try {
+            // Create a new table
+            dbApp.createTable(strTableName, strClusteringKeyColumn, columnTypes);
+
+            // Prepare data to insert
+            Hashtable<String, Object> insertData1 = new Hashtable<>();
+            insertData1.put("ID", 1);
+            insertData1.put("Name", "Item1");
+            insertData1.put("Value", 10.5);
+            insertData1.put("IsActive", true);
+
+            Hashtable<String, Object> insertData2 = new Hashtable<>();
+            insertData2.put("ID", 2);
+            insertData2.put("Name", "Item2");
+            insertData2.put("Value", 20.0);
+            insertData2.put("IsActive", false);
+
+            // Insert rows into the table
+            dbApp.insertIntoTable(strTableName, insertData1);
+            dbApp.insertIntoTable(strTableName, insertData2);
+
+            // Prepare data for updating
+            Hashtable<String, Object> updateData = new Hashtable<>();
+            updateData.put("Value", 15.0); // Update Value for ID 1
+
+            // Update the first row
+            dbApp.updateTable(strTableName, "1", updateData);
+
+            // Prepare data for deletion
+            Hashtable<String, Object> deleteData = new Hashtable<>();
+            deleteData.put("ID", 2);
+
+            // Delete the second row
+            dbApp.deleteFromTable(strTableName, deleteData);
+
+            // Example of creating a polygon and printing it
+            String strClusteringKey = "(10,20),(30,30),(40,40),(50,60)";
+            String s1 = strClusteringKey.replace(",(", "#(").replace("(", "").replace(")", ".");
+            String[] s = s1.split("#");
+            int[] x = new int[s.length];
+            int[] y = new int[s.length];
+            for (int i = 0; i < s.length; i++) {
+                int xend = s[i].indexOf(",");
+                int yend = s[i].indexOf(".");
+                if (xend != -1) x[i] = Integer.parseInt(s[i].substring(0, xend));
+                if (yend != -1) y[i] = Integer.parseInt(s[i].substring(xend + 1, yend));
+            }
+            Polygon tempPolygon = new Polygon(x, y, s.length);
+            System.out.println("Created Polygon: " + tempPolygon);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
+
 }
 
