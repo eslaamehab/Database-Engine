@@ -354,27 +354,43 @@ public class DBApp implements Serializable {
 
 
     /**
-     * Methods
+     * Creates a new table with the specified name and clustering key.
+     * This method initializes the table and adds a default "TouchDate" column.
+     *
+     * @param strTableName the name of the table to create
+     * @param strClusteringKeyColumn the name of the clustering key column
+     * @param htblColNameType a Hashtable containing column names and their data types
+     * @throws DBAppException if the data type is not supported or other errors occur
+     *
+     * @throws IOException if an error occurs during file operations
      */
     public void createTable(
             String strTableName,
             String strClusteringKeyColumn,
             Hashtable<String, Object> htblColNameType)
             throws DBAppException, IOException {
+
+        // Add default TouchDate column of type java.util.Date
         htblColNameType.put("TouchDate", "java.util.Date");
+
+        // Create a new Table object and initialize it
         Table t = new Table();
         tables.add(t);
         Page firstPage = new Page("");
         t.setTableName(strTableName);
         t.setClusteringKey(strClusteringKeyColumn);
 //        firstPage.hashtables.add(htblColNameType);
+
+        // Add the first page to the table
         t.getPages().add(String.valueOf(firstPage));
         firstPage.serialize(firstPage, "firstPage.ser");
 
+        // Validate column types
         Enumeration<String> e = htblColNameType.keys();
         String in1 = (String) e.nextElement();
         String in2 = (String) e.nextElement();
 
+        // Check if the column type is supported
         if (
                 !in2.equals("java.lang.Integer") ||
                         !in2.equals("java.lang.String") ||
@@ -387,13 +403,22 @@ public class DBApp implements Serializable {
 
 
     /**
-     * Inserts one row at a time
+     * Inserts a single row into the specified table.
+     * This method checks if the table exists and validates column types against metadata.
+     *
+     * @param strTableName the name of the table to insert into
+     * @param hashtableColumnNameValue a Hashtable containing column names and their corresponding values
+     *
+     * @throws DBAppException if the table does not exist or data types do not match
+     * @throws FileNotFoundException if the specified table file cannot be found
+     * @throws IOException if an error occurs during file operations
      */
     public void insertIntoTable(
             String strTableName,
             Hashtable<String, Object> hashtableColumnNameValue)
             throws DBAppException, FileNotFoundException, IOException {
 
+        // Add the current date to the TouchDate column
         DateFormat dateformat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
         Date date = new Date();
         hashtableColumnNameValue.put("TouchDate", dateformat.format(date));
@@ -401,16 +426,19 @@ public class DBApp implements Serializable {
         // Serialize pages OR serialize table with transients
 
         // page p = new page();
+
+        // Check if the table exists
         if (occurrenceCounter(DBApp.findRecordByTableName(strTableName), strTableName) == 0) return;
         else {
-            // Check column type with column type in metadata
 
+            // Validate column types against metadata
             Enumeration<String> e = hashtableColumnNameValue.keys();
-            String in1 = (String) e.nextElement();
             // Column name
-            Object in2 = hashtableColumnNameValue.get(in1);
+            String in1 = (String) e.nextElement();
             // Value
+            Object in2 = hashtableColumnNameValue.get(in1);
 
+            // Check if the column type matches
             for (int i = 0; i < findRecordByTableName(strTableName).length; i++)
                 for (int j = 0; j < findRecordByTableName(strTableName)[i].length; j++)
                     if (!findRecordByTableName(strTableName)[i][j].equals(in2.getClass()))
@@ -433,9 +461,18 @@ public class DBApp implements Serializable {
 
 
     /**
-     * hashtableColumnNameValue holds the key and new value
-     * hashtableColumnNameValue will not include clustering key as column name
-     * hashtableColumnNameValue entries are ANDED together
+     * Updates records in the specified table based on the provided clustering key.
+     * The method validates the key's type and performs the update operation.
+     *
+     * @param strTableName the name of the table to update
+     * @param strClusteringKey the value of the clustering key to identify records to update
+     * @param hashtableColumnNameValue a Hashtable containing column names and their new values
+     *
+     * @throws DBAppException if the key type is unsupported or other errors occur
+     * @throws NumberFormatException if the clustering key cannot be parsed
+     * @throws FileNotFoundException if the specified table file cannot be found
+     * @throws IOException if an error occurs during file operations
+     * @throws ParseException if there is an error parsing dates
      */
     @SuppressWarnings("unchecked")
     public void updateTable(
@@ -444,8 +481,8 @@ public class DBApp implements Serializable {
             Hashtable<String, Object> hashtableColumnNameValue)
             throws DBAppException, NumberFormatException, FileNotFoundException, IOException, ParseException {
 
+        // Determine the type of the clustering key and parse it accordingly
         Object key;
-
         switch (getTypeOfKey(strTableName)) {
             case "java.lang.Integer" -> {
                 // PARSING
@@ -596,9 +633,14 @@ public class DBApp implements Serializable {
 
 
     /**
-     * hashtableColumnNameValue holds the key and value.
-     * This will be used in search to identify which rows/ tuples to delete.
-     * hashtableColumnNameValue entries are ANDED together
+     * Deletes records from the specified table based on provided criteria.
+     * The method identifies records to delete using the provided Hashtable.
+     *
+     * @param strTableName the name of the table to delete from
+     * @param hashtableColumnNameValue a Hashtable containing criteria for deletion
+     *
+     * @throws DBAppException if the table does not exist or other errors occur
+     * @throws IOException if an error occurs during file operations
      */
     @SuppressWarnings("unchecked")
     public void deleteFromTable(
@@ -648,6 +690,17 @@ public class DBApp implements Serializable {
             }
     }
 
+
+    /**
+     * Reads a file and returns its content as a Vector of String arrays.
+     * Each line from the file is split by commas and stored in the Vector.
+     *
+     * @param path the path to the file to read
+     *
+     * @return a Vector containing the lines of the file as String arrays
+     *
+     * @throws DBAppException if an error occurs during file reading
+     */
     public static Vector readFile(String path) throws DBAppException {
         try {
             String currentLine = "";
@@ -667,6 +720,8 @@ public class DBApp implements Serializable {
     public static void main(String[] args) throws IOException {
 
         String strClusteringKey = "(10,20),(30,30),(40,40),(50,60)";
+
+        // Process the clustering key into integer arrays for Polygon creation
         String s1 = strClusteringKey.replace(",(", "#(").replace("(", "").replace(")", ".");//10,20.#30,30.#40,40.#50,60.
         String[] s = s1.split("#");
         int[] x = new int[s.length];
@@ -679,7 +734,7 @@ public class DBApp implements Serializable {
         }
         Polygon temp = new Polygon(x, y, s.length);
 
-
+        // Create another polygon for comparison
         int[] i1 = new int[4];
         int[] i2 = new int[4];
         i1[0] = 10;
@@ -692,6 +747,7 @@ public class DBApp implements Serializable {
         i2[3] = 60;
         Polygon p = new Polygon(i1, i2, 4);
 
+        // Compare the two polygons
         System.out.println(equalPolygons(p, temp));
 
         Hashtable<String, String> h = new Hashtable<String, String>();
